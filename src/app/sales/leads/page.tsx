@@ -95,9 +95,9 @@ export default function LeadsPage() {
           </div>
         )}
 
-        <div className="flex gap-4 overflow-x-auto pb-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 pb-4">
           {stages.map(stage => (
-            <div key={stage} className="min-w-[300px] w-[300px] bg-slate-50/50 rounded-lg border p-4">
+            <div key={stage} className="bg-slate-50/50 rounded-lg border p-3 flex flex-col h-full">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-bold text-slate-700">{stage}</h3>
                 <span className="bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full text-xs font-bold">
