@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { getMyNotifications, markNotificationRead } from "@/app/actions/notifications";
 
 export const Header: React.FC<{ sidebarOpen: boolean; setSidebarOpen: (v: boolean) => void }> = ({ sidebarOpen, setSidebarOpen }) => {
   const { user, logout } = useAuth();
@@ -26,13 +27,9 @@ export const Header: React.FC<{ sidebarOpen: boolean; setSidebarOpen: (v: boolea
 
   React.useEffect(() => {
     if (user?.email) {
-      import('@/app/actions/notifications').then(({ getMyNotifications }) => {
-        getMyNotifications(user.email!).then(setNotifications);
-      });
+      getMyNotifications(user.email).then(setNotifications).catch(console.error);
       const interval = setInterval(() => {
-        import('@/app/actions/notifications').then(({ getMyNotifications }) => {
-          getMyNotifications(user.email!).then(setNotifications);
-        });
+        getMyNotifications(user.email!).then(setNotifications).catch(console.error);
       }, 60000);
       return () => clearInterval(interval);
     }
@@ -40,7 +37,6 @@ export const Header: React.FC<{ sidebarOpen: boolean; setSidebarOpen: (v: boolea
 
   const handleReadAndNavigate = async (notification: any) => {
     if (!notification.readAt) {
-      const { markNotificationRead } = await import('@/app/actions/notifications');
       await markNotificationRead(notification.id);
       const updated = notifications.map(n => n.id === notification.id ? { ...n, readAt: new Date() } : n);
       setNotifications(updated);
