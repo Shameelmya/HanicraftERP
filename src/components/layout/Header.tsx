@@ -63,15 +63,13 @@ export const Header: React.FC<{ sidebarOpen: boolean; setSidebarOpen: (v: boolea
 
       <div className="flex items-center gap-3">
         <DropdownMenu open={bellOpen} onOpenChange={setBellOpen}>
-          <DropdownMenuTrigger asChild>
-            <button className="relative flex h-10 w-10 items-center justify-center rounded-full text-slate-500 hover:text-slate-700 hover:bg-slate-100 cursor-pointer transition-colors outline-none focus-visible:ring-2 focus-visible:ring-blue-500 border-none bg-transparent">
-              <Bell className="h-5 w-5" />
-              {unreadCount > 0 && (
-                <span className="absolute top-0 right-0 transform translate-x-1/4 -translate-y-1/4 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white border-2 border-white shadow-sm">
-                  {unreadCount}
-                </span>
-              )}
-            </button>
+          <DropdownMenuTrigger className="relative flex h-10 w-10 items-center justify-center rounded-full text-slate-500 hover:text-slate-700 hover:bg-slate-100 cursor-pointer transition-colors outline-none focus-visible:ring-2 focus-visible:ring-blue-500 border-none bg-transparent">
+            <Bell className="h-5 w-5" />
+            {unreadCount > 0 && (
+              <span className="absolute top-0 right-0 transform translate-x-1/4 -translate-y-1/4 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white border-2 border-white shadow-sm">
+                {unreadCount}
+              </span>
+            )}
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-80" align="end">
             <DropdownMenuLabel>Notifications</DropdownMenuLabel>
@@ -79,8 +77,8 @@ export const Header: React.FC<{ sidebarOpen: boolean; setSidebarOpen: (v: boolea
             <div className="max-h-96 overflow-y-auto">
               {notifications.map(n => (
                 <DropdownMenuItem key={n.id} className="flex flex-col items-start cursor-pointer p-3 border-b" onClick={() => {
-                  import('@/app/actions/notifications').then(({ markAsRead }) => {
-                    markAsRead(n.id).then(() => {
+                  import('@/app/actions/notifications').then(({ markNotificationRead }) => {
+                    markNotificationRead(n.id).then(() => {
                       setNotifications(notifications.map(x => x.id === n.id ? { ...x, readAt: new Date() } : x));
                     });
                   });
@@ -100,18 +98,16 @@ export const Header: React.FC<{ sidebarOpen: boolean; setSidebarOpen: (v: boolea
         </DropdownMenu>
 
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="relative h-10 w-10 rounded-full p-0 overflow-hidden ring-2 ring-slate-100 hover:ring-blue-200 transition-all focus-visible:ring-blue-500 outline-none flex items-center justify-center bg-transparent border-0 cursor-pointer">
-              <Avatar className="h-full w-full">
-                {user?.photoUrl ? (
-                  <img src={user.photoUrl} alt="Profile" className="h-full w-full object-cover" />
-                ) : (
-                  <AvatarFallback className="bg-gradient-to-br from-blue-50 to-blue-100 text-blue-700 font-bold text-sm">
-                    {user?.name?.substring(0, 2).toUpperCase() || "US"}
-                  </AvatarFallback>
-                )}
-              </Avatar>
-            </button>
+          <DropdownMenuTrigger className="relative h-10 w-10 rounded-full p-0 overflow-hidden ring-2 ring-slate-100 hover:ring-blue-200 transition-all focus-visible:ring-blue-500 outline-none flex items-center justify-center bg-transparent border-0 cursor-pointer">
+            <Avatar className="h-full w-full">
+              {user?.photoUrl ? (
+                <img src={user.photoUrl} alt="Profile" className="h-full w-full object-cover" />
+              ) : (
+                <AvatarFallback className="bg-gradient-to-br from-blue-50 to-blue-100 text-blue-700 font-bold text-sm">
+                  {user?.name?.substring(0, 2).toUpperCase() || "US"}
+                </AvatarFallback>
+              )}
+            </Avatar>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56" align="end">
             <DropdownMenuLabel className="font-normal">
@@ -123,17 +119,13 @@ export const Header: React.FC<{ sidebarOpen: boolean; setSidebarOpen: (v: boolea
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link href="/settings" className="flex items-center w-full cursor-pointer">
-                <User className="mr-2 h-4 w-4" />
-                <span>Profile</span>
-              </Link>
+            <DropdownMenuItem onClick={() => window.location.href = "/settings"} className="flex items-center w-full cursor-pointer">
+              <User className="mr-2 h-4 w-4" />
+              <span>Profile</span>
             </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href="/settings" className="flex items-center w-full cursor-pointer">
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Preferences</span>
-              </Link>
+            <DropdownMenuItem onClick={() => window.location.href = "/settings"} className="flex items-center w-full cursor-pointer">
+              <Settings className="mr-2 h-4 w-4" />
+              <span>Preferences</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={logout} className="text-red-600 focus:text-red-600 cursor-pointer">
