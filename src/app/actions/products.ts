@@ -27,3 +27,13 @@ export async function upsertProduct(data: any, userEmail: string) {
     create: data
   });
 }
+
+export async function deleteProduct(id: string, userEmail: string) {
+  await verifyPermission(userEmail, ["MD", "GM"]);
+  
+  // Need to ensure product has no inventory/orders attached before deleting, 
+  // or Prisma will throw a foreign key error. We'll let Prisma throw it.
+  return await db.product.delete({
+    where: { id }
+  });
+}
