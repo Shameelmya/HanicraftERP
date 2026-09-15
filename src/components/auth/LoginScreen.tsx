@@ -20,7 +20,8 @@ export const LoginScreen = () => {
     setLoading(true);
     setError("");
     try {
-      await login(email, password);
+      const loginEmail = email.includes("@") ? email : `${email}@hanicraft.com`.toLowerCase();
+      await login(loginEmail, password);
     } catch (err: any) {
       if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
         setError("Invalid email or password.");
