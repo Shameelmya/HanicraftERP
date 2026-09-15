@@ -65,6 +65,12 @@ export async function getDashboardStats(employeeId?: string, role?: string) {
   }
 
   // MD/GM: company-wide overview
+  return await getMDStatsCached(startOfMonth);
+}
+
+import { unstable_cache } from "next/cache";
+
+const getMDStatsCached = unstable_cache(async (startOfMonth: Date) => {
   const [
     totalOrders,
     monthRevenue,
@@ -85,16 +91,6 @@ export async function getDashboardStats(employeeId?: string, role?: string) {
     }),
   ]);
 
-  let openOrders = 0;
-  let pendingPayments = 0;
-  
-  for (const o of ordersQuery) {
-     if (o.commercialStatus === "CONFIRMED" && o.fulfilmentStatus !== "DISPATCHED") openOrders++;
-     if (o.paymentStatus === "NO_PAYMENT" || o.paymentStatus === "ADVANCE_PENDING") pendingPayments++;
-  }
-
-  // We actually need global counts for openOrders and pendingPayments, not just the last 8.
-  // Wait, I shouldn't break the logic. Let's just do the counts efficiently.
   const [globalOpenOrders, globalPendingPayments] = await Promise.all([
     db.order.count({ where: { commercialStatus: "CONFIRMED", fulfilmentStatus: { not: "DISPATCHED" } } }),
     db.order.count({ where: { paymentStatus: { in: ["NO_PAYMENT", "ADVANCE_PENDING"] } } })
@@ -110,7 +106,7 @@ export async function getDashboardStats(employeeId?: string, role?: string) {
     employeeCount,
     recentOrders: ordersQuery,
   };
-}
+}, ["md-dashboard-stats"], { revalidate: 30 });
 
 export async function getMyNotifications(employeeId: string, page = 1, pageSize = 20) {
   const [notifications, total] = await Promise.all([

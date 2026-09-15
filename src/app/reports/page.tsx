@@ -16,6 +16,39 @@ export default function ReportsPage() {
 
   const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6'];
 
+  const handleExport = () => {
+    if (!data) return;
+    
+    // Create CSV content from data
+    const rows = [
+      ["Hanicraft Analytics Report"],
+      [],
+      ["Metric", "Value"],
+      ["YTD Revenue (INR)", data.totalRevenue || 0],
+      ["Active Clients", data.activeClients || 0],
+      ["Total Production Units", data.totalProduction || 0],
+      [],
+      ["Revenue Trends"],
+      ["Month", "Revenue (INR)"],
+      ...(data.barData || []).map((row: any) => [row.name, row.revenue]),
+      [],
+      ["Department Activity"],
+      ["Department", "Activity Units"],
+      ...(data.pieData || []).map((row: any) => [row.name, row.value])
+    ];
+
+    const csvContent = rows.map(r => r.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Hanicraft_Report_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -24,7 +57,7 @@ export default function ReportsPage() {
             <h1 className="text-3xl font-bold tracking-tight text-slate-900">Analytics & Reports</h1>
             <p className="text-slate-500">Comprehensive overview of business performance.</p>
           </div>
-          <Button variant="outline" className="border-slate-200">
+          <Button variant="outline" className="border-slate-200" onClick={handleExport}>
             <Download className="mr-2 h-4 w-4" /> Export Report
           </Button>
         </div>

@@ -138,21 +138,23 @@ export const Sidebar: React.FC<{ open: boolean; setOpen: (v: boolean) => void }>
       {/* Logo */}
       <div className="h-16 flex items-center justify-between px-4 border-b border-gray-100">
         {open ? (
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
-              <span className="text-white font-bold text-sm">H</span>
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
+                <span className="text-white font-bold text-sm">H</span>
+              </div>
+              <div className="min-w-0">
+                <div className="font-bold text-gray-900 text-sm truncate">Hanicraft</div>
+              </div>
             </div>
-            <div className="min-w-0">
-              <div className="font-bold text-gray-900 text-sm truncate">Hanicraft</div>
-              <div className="text-xs text-gray-400 truncate">Creative LLP · ERP</div>
-            </div>
+            <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
+              <ChevronLeft className="w-4 h-4" />
+            </button>
           </div>
         ) : (
-          <div className="w-full flex justify-center">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
-              <span className="text-white font-bold text-sm">H</span>
-            </div>
-          </div>
+          <button onClick={() => setOpen(true)} className="w-full flex justify-center text-gray-400 hover:text-gray-600 transition-colors">
+            <ChevronRight className="w-4 h-4" />
+          </button>
         )}
       </div>
 
@@ -176,9 +178,9 @@ export const Sidebar: React.FC<{ open: boolean; setOpen: (v: boolean) => void }>
                     <Link
                       href={item.href}
                       title={!open ? item.name : undefined}
-                      className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150 ${
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150 font-bold ${
                         isActive
-                          ? `${activeClass} font-semibold`
+                          ? `${activeClass} font-extrabold shadow-sm`
                           : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                       }`}
                     >
@@ -198,26 +200,21 @@ export const Sidebar: React.FC<{ open: boolean; setOpen: (v: boolean) => void }>
         ))}
       </nav>
 
-      {/* User info + collapse */}
+      {/* User profile dropdown moved to bottom of sidebar */}
       <div className="border-t border-gray-100 p-3">
-        {open && user && (
-          <div className="flex items-center gap-3 px-2 py-2 rounded-lg bg-gray-50 mb-2">
-            <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
+        {user && (
+          <div className={`flex items-center ${open ? 'gap-3 px-2 py-2' : 'justify-center'} rounded-lg bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors`}>
+            <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0 shadow-sm">
               <span className="text-white text-xs font-bold">{user.name.charAt(0).toUpperCase()}</span>
             </div>
-            <div className="min-w-0 flex-1">
-              <div className="text-xs font-semibold text-gray-900 truncate">{user.name}</div>
-              <div className="text-[10px] text-gray-500 truncate">{user.role}</div>
-            </div>
+            {open && (
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-bold text-gray-900 truncate">{user.name}</div>
+                <div className="text-[10px] text-gray-500 truncate uppercase tracking-wider">{user.role}</div>
+              </div>
+            )}
           </div>
         )}
-        <button
-          onClick={() => setOpen(!open)}
-          className="w-full flex items-center justify-center p-2 rounded-lg text-gray-400 hover:bg-gray-50 hover:text-gray-700 transition-colors"
-          aria-label={open ? "Collapse sidebar" : "Expand sidebar"}
-        >
-          {open ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-        </button>
       </div>
     </aside>
   );

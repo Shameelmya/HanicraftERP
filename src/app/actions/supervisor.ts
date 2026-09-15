@@ -39,7 +39,7 @@ export async function assignTaskToWorker(data: {
   const taskCount = await db.task.count();
   const taskCode = `TSK-${new Date().getFullYear()}-${String(taskCount + 1).padStart(5, '0')}`;
 
-  return db.task.create({
+  const task = await db.task.create({
     data: {
       taskCode,
       type: data.taskType,
@@ -54,4 +54,21 @@ export async function assignTaskToWorker(data: {
       assignedAt: new Date()
     }
   });
+
+  const company = await db.company.findFirst();
+  if (company) {
+    await db.notification.create({
+      data: {
+        companyId: company.id,
+        recipientId: data.workerId,
+        eventType: "TASK_ASSIGNED",
+        title: `New Task: ${data.taskType}`,
+        message: `You have been assigned ${data.taskType} work. Target Qty: ${data.targetQty}.`,
+        targetRef: task.id,
+        targetRefType: "Task",
+      },
+    });
+  }
+
+  return task;
 }
