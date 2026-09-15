@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { useAuth } from "@/auth/AuthContext";
 import { Menu, Bell, Search, User, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -55,7 +56,7 @@ export const Header: React.FC<{ sidebarOpen: boolean; setSidebarOpen: (v: boolea
           <Search className="h-4 w-4 absolute left-3 text-gray-400" />
           <Input 
             placeholder="Search customers, orders, products..." 
-            className="pl-9 bg-gray-50 border-gray-200 focus-visible:ring-blue-500 rounded-full"
+            className="!pl-9 bg-gray-50 border-gray-200 focus-visible:ring-blue-500 rounded-full"
           />
         </div>
       </div>
@@ -113,12 +114,16 @@ export const Header: React.FC<{ sidebarOpen: boolean; setSidebarOpen: (v: boolea
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem>
-              <User className="mr-2 h-4 w-4" />
-              <span>Profile</span>
+              <Link href="/settings" className="flex items-center w-full cursor-pointer">
+                <User className="mr-2 h-4 w-4" />
+                <span>Profile</span>
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuItem>
-              <Settings className="mr-2 h-4 w-4" />
-              <span>Preferences</span>
+              <Link href="/settings" className="flex items-center w-full cursor-pointer">
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Preferences</span>
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={logout} className="text-red-600 focus:text-red-600 cursor-pointer">

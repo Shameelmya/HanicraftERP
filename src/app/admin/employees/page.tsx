@@ -62,7 +62,7 @@ export default function EmployeesAdminPage() {
     fetchData();
   };
 
-  if (!user || (user.role !== "Super Admin" && user.role !== "Management")) {
+  if (!user || !["Super Admin", "Management", "MD"].includes(user.role)) {
     return <AppLayout><div className="p-8">Access Denied. You do not have permission to view this page.</div></AppLayout>;
   }
 

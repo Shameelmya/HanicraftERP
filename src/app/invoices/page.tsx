@@ -19,7 +19,7 @@ export default function InvoicesPage() {
           <div className="card-header flex justify-between items-center">
             <div className="relative w-72">
               <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <input type="text" placeholder="Search invoices..." className="input pl-10" />
+              <input type="text" placeholder="Search invoices..." className="input !pl-10" />
             </div>
           </div>
           <div className="card-body p-0">

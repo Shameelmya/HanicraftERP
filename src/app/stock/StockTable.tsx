@@ -37,7 +37,7 @@ export const StockTable: React.FC<{ initialData: StockProduct[] }> = ({ initialD
           <input
             type="text"
             placeholder="Search by SKU, name or category..."
-            className="input pl-9"
+            className="input !pl-9"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />

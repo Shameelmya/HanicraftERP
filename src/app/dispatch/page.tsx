@@ -38,7 +38,7 @@ export default function DispatchPage() {
             <div className="flex flex-col sm:flex-row justify-between gap-4">
               <div className="relative w-full max-w-sm">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
-                <Input placeholder="Search shipments..." className="pl-9 bg-slate-50 border-slate-200 focus-visible:ring-slate-900" />
+                <Input placeholder="Search deliveries..." className="!pl-9 bg-slate-50 border-slate-200 focus-visible:ring-slate-900" />
               </div>
               <Button variant="outline" className="border-slate-200">
                 <Filter className="mr-2 h-4 w-4" /> Filter
