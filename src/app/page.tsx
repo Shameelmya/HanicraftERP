@@ -24,24 +24,35 @@ function formatINR(amount: number) {
   return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(amount);
 }
 
+const gradientMap: Record<string, { bg: string, iconBg: string, text: string, titleText: string, subText: string }> = {
+  "#1D4ED8": { bg: "bg-gradient-to-br from-blue-400 to-indigo-500", iconBg: "bg-white/20", text: "text-white", titleText: "text-blue-50", subText: "text-blue-100" }, // Blue
+  "#166534": { bg: "bg-gradient-to-br from-emerald-400 to-teal-500", iconBg: "bg-white/20", text: "text-white", titleText: "text-emerald-50", subText: "text-emerald-100" }, // Green
+  "#6D28D9": { bg: "bg-gradient-to-br from-fuchsia-400 to-purple-500", iconBg: "bg-white/20", text: "text-white", titleText: "text-fuchsia-50", subText: "text-fuchsia-100" }, // Purple
+  "#0F766E": { bg: "bg-gradient-to-br from-cyan-400 to-blue-500", iconBg: "bg-white/20", text: "text-white", titleText: "text-cyan-50", subText: "text-cyan-100" }, // Teal
+  "#92400E": { bg: "bg-gradient-to-br from-orange-400 to-rose-400", iconBg: "bg-white/20", text: "text-white", titleText: "text-orange-50", subText: "text-orange-100" }, // Orange
+  "#B91C1C": { bg: "bg-gradient-to-br from-rose-400 to-red-500", iconBg: "bg-white/20", text: "text-white", titleText: "text-rose-50", subText: "text-rose-100" }, // Red
+};
+
 function StatCard({ label, value, sub, icon: Icon, color, href }: {
   label: string; value: string | number; sub?: string; icon: React.ElementType; color: string; href?: string;
 }) {
+  const theme = gradientMap[color] || { bg: "bg-gradient-to-br from-slate-400 to-slate-500", iconBg: "bg-white/20", text: "text-white", titleText: "text-slate-50", subText: "text-slate-100" };
+  
   const inner = (
-    <div className="stat-card" style={{ borderTop: `3px solid ${color}` }}>
+    <div className={`p-6 rounded-xl shadow-sm border-0 transition-all hover:shadow-md ${theme.bg}`}>
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-card-title" style={{ color }}>{label}</p>
-          <p className="stat-card-value" style={{ color: "var(--color-text-primary)" }}>{value}</p>
-          {sub && <p className="stat-card-change">{sub}</p>}
+          <p className={`text-xs font-bold uppercase tracking-wider mb-1 ${theme.titleText}`}>{label}</p>
+          <p className={`text-3xl font-extrabold ${theme.text}`}>{value}</p>
+          {sub && <p className={`text-xs mt-2 font-medium ${theme.subText}`}>{sub}</p>}
         </div>
-        <div className="p-2 rounded-lg" style={{ background: `${color}15` }}>
-          <Icon className="w-5 h-5" style={{ color }} />
+        <div className={`p-3 rounded-xl shadow-sm ${theme.iconBg}`}>
+          <Icon className={`w-6 h-6 ${theme.text}`} />
         </div>
       </div>
     </div>
   );
-  return href ? <Link href={href} className="hover:no-underline">{inner}</Link> : inner;
+  return href ? <Link href={href} className="hover:no-underline hover:-translate-y-1 block transition-transform">{inner}</Link> : inner;
 }
 
 function TaskCard({ task }: { task: any }) {
