@@ -1,0 +1,934 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ─── ORGANIZATION ────────────────────────────────────────────────────────────
+
+model Company {
+  id                String   @id @default(uuid())
+  legalName         String
+  tradingName       String?
+  gstin             String?
+  pan               String?
+  address           String?
+  city              String?
+  state             String?
+  pincode           String?
+  bankName          String?
+  bankAccount       String?
+  bankIfsc          String?
+  logoUrl           String?
+  financialYearStart Int     @default(4) // April = month 4
+  timezone          String   @default("Asia/Kolkata")
+  currency          String   @default("INR")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  employees        Employee[]
+  departments      Department[]
+  products         Product[]
+  customers        Customer[]
+  orders           Order[]
+  productionJobs   ProductionJob[]
+  notifications    Notification[]
+  auditEvents      AuditEvent[]
+}
+
+model Department {
+  id          String  @id @default(uuid())
+  companyId   String
+  company     Company @relation(fields: [companyId], references: [id])
+  name        String
+  code        String?
+  parentId    String?
+  parent      Department?  @relation("SubDepartments", fields: [parentId], references: [id])
+  children    Department[] @relation("SubDepartments")
+  active      Boolean      @default(true)
+  employees   Employee[]
+  workCentres WorkCentre[]
+
+  @@unique([companyId, name])
+}
+
+model WorkCentre {
+  id           String     @id @default(uuid())
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id])
+  name         String
+  code         String     @unique
+  type         String     // CNC, LASER, STATIONARY, PUTTY_PAPERING, SEALER_PAPERING, GRAINS, SPRAY_PAINT, ACRYLIC
+  active       Boolean    @default(true)
+  dailyAssignments DailyAssignment[]
+}
+
+// ─── PEOPLE ──────────────────────────────────────────────────────────────────
+
+model Employee {
+  id              String   @id @default(uuid())
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id])
+  employeeCode    String   @unique
+  firebaseUid     String?  @unique
+  name            String
+  jobTitle        String?
+  workEmail       String   @unique
+  phone           String?
+  whatsapp        String?
+  whatsappSameAsPhone Boolean @default(false)
+  photoUrl        String?
+  status          String   @default("ACTIVE") // ACTIVE, DISABLED, RESIGNED
+  joiningDate     DateTime?
+  leavingDate     DateTime?
+  remarks         String?
+
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+
+  supervisorId String?
+  supervisor   Employee?  @relation("Supervisor", fields: [supervisorId], references: [id])
+  subordinates Employee[] @relation("Supervisor")
+
+  roleAssignments EmployeeRoleScope[]
+  capabilities    EmployeeCapability[]
+  dailyAssignments DailyAssignment[]
+
+  tasksAssigned Task[] @relation("TaskAssigner")
+  tasksReceived Task[] @relation("TaskAssignee")
+  notifications Notification[]
+  auditEvents   AuditEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Role {
+  id          String  @id @default(uuid())
+  name        String  @unique // MD, GM, Sales, Finance, Stock, Production_Supervisor, Finishing_Supervisor, Operator, QC, Dispatch, Admin
+  description String?
+  isProtected Boolean @default(false)
+  permissions RolePermission[]
+  scopes      EmployeeRoleScope[]
+}
+
+model Permission {
+  id          String           @id @default(uuid())
+  code        String           @unique // e.g. orders.create:own, payments.post:company
+  description String?
+  roles       RolePermission[]
+}
+
+model RolePermission {
+  roleId       String
+  role         Role       @relation(fields: [roleId], references: [id])
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id])
+
+  @@id([roleId, permissionId])
+}
+
+model EmployeeRoleScope {
+  id          String   @id @default(uuid())
+  employeeId  String
+  employee    Employee @relation(fields: [employeeId], references: [id])
+  roleId      String
+  role        Role     @relation(fields: [roleId], references: [id])
+  validFrom   DateTime @default(now())
+  validUntil  DateTime?
+  grantedBy   String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@unique([employeeId, roleId])
+}
+
+model Capability {
+  id          String               @id @default(uuid())
+  code        String               @unique // CNC, LASER, FINISHING, ACRYLIC, QC, DISPATCH
+  name        String
+  employees   EmployeeCapability[]
+}
+
+model EmployeeCapability {
+  employeeId   String
+  employee     Employee   @relation(fields: [employeeId], references: [id])
+  capabilityId String
+  capability   Capability @relation(fields: [capabilityId], references: [id])
+  certifiedAt  DateTime?
+  expiresAt    DateTime?
+
+  @@id([employeeId, capabilityId])
+}
+
+model DailyAssignment {
+  id           String     @id @default(uuid())
+  employeeId   String
+  employee     Employee   @relation(fields: [employeeId], references: [id])
+  workCentreId String
+  workCentre   WorkCentre @relation(fields: [workCentreId], references: [id])
+  assignDate   DateTime
+  shiftStart   DateTime?
+  shiftEnd     DateTime?
+  supervisorId String?
+  notes        String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([employeeId, workCentreId, assignDate])
+}
+
+// ─── CUSTOMERS & SALES ───────────────────────────────────────────────────────
+
+model Customer {
+  id              String   @id @default(uuid())
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id])
+  customerCode    String   @unique
+  displayName     String
+  legalName       String?
+  contactType     String   @default("INDIVIDUAL") // INDIVIDUAL, BUSINESS
+  segment         String?  // RETAIL, WHOLESALE, CORPORATE, VIP
+  creditStatus    String   @default("GOOD") // GOOD, WATCH, BLOCKED
+  customerScore   Int?
+  preferredLanguage String?
+  isArchived      Boolean  @default(false)
+  archivedAt      DateTime?
+  ownerEmployeeId String?
+
+  contacts        CustomerContact[]
+  addresses       CustomerAddress[]
+  taxProfiles     CustomerTaxProfile[]
+  notes           CustomerNote[]
+  leads           Lead[]
+  orders          Order[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CustomerContact {
+  id              String   @id @default(uuid())
+  customerId      String
+  customer        Customer @relation(fields: [customerId], references: [id])
+  contactPerson   String?
+  originalPhone   String
+  normalizedPhone String
+  isWhatsApp      Boolean  @default(false)
+  whatsappSameAsPhone Boolean @default(false)
+  email           String?
+  isPrimary       Boolean  @default(false)
+  consentMarketing Boolean @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model CustomerAddress {
+  id          String   @id @default(uuid())
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id])
+  type        String   @default("BILLING") // BILLING, SHIPPING
+  line1       String?
+  line2       String?
+  locality    String?
+  district    String?
+  state       String?
+  pincode     String?
+  country     String   @default("India")
+  isPrimary   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+model CustomerTaxProfile {
+  id            String   @id @default(uuid())
+  customerId    String
+  customer      Customer @relation(fields: [customerId], references: [id])
+  gstin         String?
+  pan           String?
+  placeOfSupply String?
+  isGstRegistered Boolean @default(false)
+  validFrom     DateTime @default(now())
+  validUntil    DateTime?
+  createdAt     DateTime @default(now())
+}
+
+model CustomerNote {
+  id           String   @id @default(uuid())
+  customerId   String
+  customer     Customer @relation(fields: [customerId], references: [id])
+  category     String   // SERVICE, RISK, PREFERENCE, GENERAL
+  content      String
+  visibility   String   @default("SALES") // SALES, MANAGEMENT, ALL
+  authorId     String?
+  reviewDate   DateTime?
+  createdAt    DateTime @default(now())
+}
+
+model Lead {
+  id             String   @id @default(uuid())
+  leadCode       String   @unique
+  customerId     String
+  customer       Customer @relation(fields: [customerId], references: [id])
+  ownerEmployeeId String?
+  source         String?  // WALK_IN, REFERRAL, PHONE, WHATSAPP, EXHIBITION
+  stage          String   @default("NEW") // NEW, CONTACTED, QUALIFIED, QUOTED, WON, LOST, ARCHIVED
+  requirementSummary String?
+  nextFollowUp   DateTime?
+  lostReason     String?
+  expectedValue  Float?
+
+  quotations Quotation[]
+  activities LeadActivity[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model LeadActivity {
+  id          String   @id @default(uuid())
+  leadId      String
+  lead        Lead     @relation(fields: [leadId], references: [id])
+  type        String   // CALL, WHATSAPP, VISIT, NOTE, STATUS_CHANGE
+  description String
+  employeeId  String?
+  createdAt   DateTime @default(now())
+}
+
+model Quotation {
+  id          String   @id @default(uuid())
+  leadId      String
+  lead        Lead     @relation(fields: [leadId], references: [id])
+  quotationNo String   @unique
+  validUntil  DateTime?
+  status      String   @default("DRAFT") // DRAFT, SENT, ACCEPTED, REJECTED, EXPIRED
+  notes       String?
+  revisions   QuotationRevision[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model QuotationRevision {
+  id              String    @id @default(uuid())
+  quotationId     String
+  quotation       Quotation @relation(fields: [quotationId], references: [id])
+  revisionNumber  Int       @default(1)
+  subtotal        Float
+  discountAmount  Float     @default(0)
+  taxAmount       Float     @default(0)
+  freightAmount   Float     @default(0)
+  totalAmount     Float
+  advanceRequired Float     @default(0)
+  advancePercent  Float?
+  deliveryDays    Int?
+  validUntil      DateTime?
+  notes           String?
+  status          String    @default("DRAFT")
+  lines           QuoteLine[]
+  orders          Order[]
+  createdAt       DateTime  @default(now())
+}
+
+model QuoteLine {
+  id                 String            @id @default(uuid())
+  revisionId         String
+  revision           QuotationRevision @relation(fields: [revisionId], references: [id])
+  lineNumber         Int
+  itemType           String            // CATALOGUE, CUSTOM, SERVICE
+  productId          String?
+  product            Product?          @relation(fields: [productId], references: [id])
+  specificationId    String?
+  specification      SpecificationVersion? @relation(fields: [specificationId], references: [id])
+  description        String
+  hsnSac             String?
+  quantity           Float
+  uom                String            @default("NOS")
+  unitPrice          Float
+  discountPercent    Float             @default(0)
+  taxSgstPercent     Float             @default(0)
+  taxCgstPercent     Float             @default(0)
+  taxIgstPercent     Float             @default(0)
+  taxableAmount      Float
+  taxAmount          Float
+  lineTotal          Float
+  notes              String?
+}
+
+// ─── ORDERS ──────────────────────────────────────────────────────────────────
+
+model Order {
+  id             String   @id @default(uuid())
+  companyId      String
+  company        Company  @relation(fields: [companyId], references: [id])
+  orderNo        String   @unique
+  voucherNo      String?
+  customerId     String
+  customer       Customer @relation(fields: [customerId], references: [id])
+  quoteRevisionId String?
+  quoteRevision  QuotationRevision? @relation(fields: [quoteRevisionId], references: [id])
+  ownerEmployeeId String?
+
+  // Multi-dimension status per spec §10
+  commercialStatus  String @default("CONFIRMED") // DRAFT, CONFIRMED, AMENDMENT_PENDING, CANCELLATION_PENDING, CANCELLED, CLOSED
+  fulfilmentStatus  String @default("NOT_RELEASED") // NOT_RELEASED, QUEUED_FOR_STOCK, ALLOCATING, AWAITING_PRODUCTION, PARTIALLY_READY, READY, PARTIALLY_DISPATCHED, DISPATCHED, EXCEPTION
+  paymentStatus     String @default("NO_PAYMENT") // NO_PAYMENT, ADVANCE_PENDING, ADVANCE_CLEARED, PART_PAID, FULLY_PAID, CREDIT_BALANCE, REFUND_PENDING, REVERSED_OR_DISPUTED
+  dispatchAuthStatus String @default("BLOCKED") // BLOCKED, CLEARED, REVOKED, CONSUMED
+
+  currentRevision  Int     @default(1)
+  promiseDate      DateTime?
+  billingAddressId String?
+  shippingAddressId String?
+  deliveryMethod   String?
+  buyerReference   String?
+  placeOfSupply    String?
+
+  // Computed financial totals (snapshot at current revision)
+  subtotal        Float   @default(0)
+  discountAmount  Float   @default(0)
+  taxAmount       Float   @default(0)
+  freightAmount   Float   @default(0)
+  totalPayable    Float   @default(0)
+  advanceRequired Float   @default(0)
+
+  revisions       OrderRevision[]
+  lines           OrderLine[]
+  payments        Payment[]
+  financialClearances FinancialClearance[]
+  productionRequests ProductionRequest[]
+  tasks           Task[]
+  shipments       Shipment[]
+  invoices        Invoice[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model OrderRevision {
+  id             String   @id @default(uuid())
+  orderId        String
+  order          Order    @relation(fields: [orderId], references: [id])
+  revisionNumber Int
+  reason         String?
+  approvedBy     String?
+  totalPayable   Float
+  advanceRequired Float
+  notes          String?
+  createdAt      DateTime @default(now())
+}
+
+model OrderLine {
+  id              String   @id @default(uuid())
+  orderId         String
+  order           Order    @relation(fields: [orderId], references: [id])
+  lineNumber      Int
+  itemType        String   // CATALOGUE, CUSTOM, SERVICE
+  productId       String?
+  product         Product? @relation(fields: [productId], references: [id])
+  specificationId String?
+  specification   SpecificationVersion? @relation(fields: [specificationId], references: [id])
+
+  description     String
+  hsnSac          String?
+  orderedQty      Float
+  cancelledQty    Float    @default(0)
+  allocatedQty    Float    @default(0)
+  packedQty       Float    @default(0)
+  dispatchedQty   Float    @default(0)
+  uom             String   @default("NOS")
+  unitPrice       Float
+  discountPercent Float    @default(0)
+  taxSgstPercent  Float    @default(0)
+  taxCgstPercent  Float    @default(0)
+  taxIgstPercent  Float    @default(0)
+  taxableAmount   Float
+  taxAmount       Float
+  lineTotal       Float
+  promisedDate    DateTime?
+
+  // Per-line status
+  stockStatus      String   @default("PENDING") // PENDING, PARTIALLY_ALLOCATED, FULLY_ALLOCATED, PACKED
+  productionStatus String   @default("NOT_NEEDED") // NOT_NEEDED, REQUESTED, IN_PROGRESS, COMPLETED
+  qcStatus         String   @default("NOT_NEEDED") // NOT_NEEDED, PENDING, PASSED, FAILED, REWORK
+  fulfilmentStatus String   @default("PENDING") // PENDING, PARTIALLY_READY, READY, DISPATCHED
+
+  reservations     Reservation[]
+  productionRequestLines ProductionRequestLine[]
+}
+
+model SpecificationVersion {
+  id            String   @id @default(uuid())
+  title         String
+  material      String?
+  dimensions    String?
+  finish        String?
+  colour        String?
+  artworkText   String?
+  tolerances    String?
+  packagingNotes String?
+  approvedBy    String?
+  approvedAt    DateTime?
+  supersededById String?
+  revisionNumber Int     @default(1)
+  createdAt     DateTime @default(now())
+
+  quoteLines  QuoteLine[]
+  orderLines  OrderLine[]
+  productionJobs ProductionJob[]
+}
+
+// ─── PRODUCTS & INVENTORY ─────────────────────────────────────────────────────
+
+model Product {
+  id            String   @id @default(uuid())
+  companyId     String
+  company       Company  @relation(fields: [companyId], references: [id])
+  sku           String   @unique
+  name          String
+  category      String?  // NMH, RBZ, ACR, GYA, SM, OTHER
+  productType   String   @default("FINISHED_CATALOGUE") // FINISHED_CATALOGUE, CUSTOM_FINISHED, RAW_MATERIAL, COMPONENT, CONSUMABLE, SERVICE
+  baseUom       String   @default("NOS")
+  imageUrl      String?
+  description   String?
+  hsnSac        String?
+  defaultGstPercent Float @default(5)
+  isManufactured Boolean @default(true)
+  isActive      Boolean  @default(false) // Only active after stock verification
+  importBatchId String?
+  importRow     Int?
+  importBlock   Int?
+  importFlags   String?  // JSON: duplicate, placeholder, countUnknown, minUnknown
+
+  priceListItems PriceListItem[]
+  inventoryBalances InventoryBalance[]
+  reorderPolicies   ReorderPolicy[]
+  orderLines        OrderLine[]
+  quoteLines        QuoteLine[]
+  productionRequests ProductionRequestLine[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PriceListItem {
+  id          String   @id @default(uuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id])
+  price       Float
+  effectiveFrom DateTime @default(now())
+  effectiveUntil DateTime?
+  approvedBy  String?
+  createdAt   DateTime @default(now())
+}
+
+model ReorderPolicy {
+  id              String  @id @default(uuid())
+  productId       String
+  product         Product @relation(fields: [productId], references: [id])
+  warehouseCode   String  @default("FINISHED_GOODS")
+  minimumQty      Float?  // null = unconfigured
+  targetQty       Float?
+  reorderPoint    Float?
+  batchMultiple   Float?
+  leadTimeDays    Int?
+  isActive        Boolean @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model InventoryBalance {
+  id              String   @id @default(uuid())
+  productId       String
+  product         Product  @relation(fields: [productId], references: [id])
+  warehouseCode   String   // FINISHED_GOODS, RAW_MATERIALS, WIP, QC_HOLD, PACKING, DAMAGED, RETURNS
+  binCode         String?
+  condition       String   @default("USABLE") // USABLE, QC_HOLD, DAMAGED, RETURNS_QUARANTINE
+  physicalQty     Float    @default(0)
+  reservedQty     Float    @default(0)
+  holdQty         Float    @default(0)
+  version         Int      @default(0)
+  costPerUnit     Float?
+  updatedAt       DateTime @updatedAt
+
+  @@unique([productId, warehouseCode, condition])
+}
+
+model InventoryMovement {
+  id              String   @id @default(uuid())
+  productId       String
+  warehouseCode   String
+  movementType    String   // OPENING_BALANCE, PRODUCTION_RECEIPT, STOCK_ISSUE, ADJUSTMENT, TRANSFER, RETURN, SCRAP
+  qty             Float
+  uom             String   @default("NOS")
+  sourceRef       String?  // orderId, productionJobId, etc.
+  sourceRefType   String?
+  costPerUnit     Float?
+  notes           String?
+  reversalOf      String?
+  actorId         String?
+  createdAt       DateTime @default(now())
+}
+
+model Reservation {
+  id          String    @id @default(uuid())
+  orderLineId String
+  orderLine   OrderLine @relation(fields: [orderLineId], references: [id])
+  productId   String
+  warehouseCode String
+  reservedQty Float
+  consumedQty Float     @default(0)
+  releasedQty Float     @default(0)
+  status      String    @default("ACTIVE") // ACTIVE, PART_CONSUMED, CONSUMED, RELEASED
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model SalesHold {
+  id          String   @id @default(uuid())
+  customerId  String
+  productId   String
+  qty         Float
+  expiresAt   DateTime
+  ownerId     String?
+  status      String   @default("ACTIVE") // ACTIVE, EXPIRED, CONVERTED
+  convertedAt DateTime?
+  createdAt   DateTime @default(now())
+}
+
+// ─── FINANCE ─────────────────────────────────────────────────────────────────
+
+model Payment {
+  id              String   @id @default(uuid())
+  orderId         String?
+  order           Order?   @relation(fields: [orderId], references: [id])
+  customerId      String?
+  paymentNo       String   @unique
+  paymentType     String   // ADVANCE, PARTIAL, FINAL, REFUND
+  method          String   // CASH, BANK_TRANSFER, CHEQUE, UPI, CARD
+  bankAccount     String?
+  reference       String?
+  amount          Float
+  currency        String   @default("INR")
+  receivedDate    DateTime @default(now())
+  status          String   @default("PENDING_VERIFICATION") // DRAFT, PENDING_VERIFICATION, POSTED_CLEARED, REJECTED, REVERSED
+  postedBy        String?
+  postedAt        DateTime?
+  evidence        String?
+  notes           String?
+  reversalOf      String?
+  allocations     PaymentAllocation[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model PaymentAllocation {
+  id          String   @id @default(uuid())
+  paymentId   String
+  payment     Payment  @relation(fields: [paymentId], references: [id])
+  orderId     String
+  amount      Float
+  purpose     String   // ADVANCE, INVOICE_SETTLEMENT
+  allocatedBy String?
+  allocatedAt DateTime @default(now())
+}
+
+model Invoice {
+  id          String   @id @default(uuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id])
+  invoiceNo   String   @unique
+  invoiceType String   // SALES_ORDER, TAX_INVOICE, PROFORMA, RECEIPT_VOUCHER
+  status      String   @default("DRAFT") // DRAFT, APPROVED, POSTED, PART_SETTLED, SETTLED, VOIDED
+  issueDate   DateTime @default(now())
+  dueDate     DateTime?
+  subtotal    Float
+  taxAmount   Float
+  totalAmount Float
+  notes       String?
+  lines       InvoiceLine[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model InvoiceLine {
+  id          String  @id @default(uuid())
+  invoiceId   String
+  invoice     Invoice @relation(fields: [invoiceId], references: [id])
+  description String
+  hsnSac      String?
+  qty         Float
+  uom         String  @default("NOS")
+  unitPrice   Float
+  discount    Float   @default(0)
+  taxSgst     Float   @default(0)
+  taxCgst     Float   @default(0)
+  taxIgst     Float   @default(0)
+  lineTotal   Float
+}
+
+model FinancialClearance {
+  id               String   @id @default(uuid())
+  orderId          String
+  order            Order    @relation(fields: [orderId], references: [id])
+  orderRevision    Int
+  payableSnapshot  Float
+  allocatedAmount  Float
+  status           String   @default("CLEARED") // CLEARED, REVOKED, CONSUMED
+  clearedBy        String
+  clearedAt        DateTime @default(now())
+  revokedAt        DateTime?
+  revokedBy        String?
+  revokeReason     String?
+  consumedAt       DateTime?
+}
+
+// ─── PRODUCTION ───────────────────────────────────────────────────────────────
+
+model ProductionRequest {
+  id              String   @id @default(uuid())
+  requestNo       String   @unique
+  orderId         String?
+  order           Order?   @relation(fields: [orderId], references: [id])
+  purpose         String   // ORDER_SHORTAGE, CUSTOM_ORDER, STOCK_REPLENISHMENT, APPROVED_SAMPLE, REWORK_REPLACEMENT
+  requestedById   String?  // Stock employee
+  status          String   @default("SUBMITTED") // DRAFT, SUBMITTED, RECEIVED, NEEDS_INFORMATION, ACCEPTED, SCHEDULED, IN_PROGRESS, PARTIALLY_RECEIVED, RECEIVED_COMPLETE, CANCELLED
+  priority        String   @default("NORMAL") // LOW, NORMAL, HIGH, URGENT
+  dueDate         DateTime?
+  notes           String?
+  lines           ProductionRequestLine[]
+  jobs            ProductionJob[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model ProductionRequestLine {
+  id                String            @id @default(uuid())
+  requestId         String
+  request           ProductionRequest @relation(fields: [requestId], references: [id])
+  orderLineId       String?
+  orderLine         OrderLine?        @relation(fields: [orderLineId], references: [id])
+  productId         String?
+  product           Product?          @relation(fields: [productId], references: [id])
+  specificationId   String?
+  description       String
+  requestedQty      Float
+  acceptedQty       Float             @default(0)
+  receivedQty       Float             @default(0)
+  uom               String            @default("NOS")
+  warehouseCode     String            @default("FINISHED_GOODS")
+}
+
+model ProductionJob {
+  id              String   @id @default(uuid())
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id])
+  jobNo           String   @unique
+  requestId       String?
+  request         ProductionRequest? @relation(fields: [requestId], references: [id])
+  specificationId String?
+  specification   SpecificationVersion? @relation(fields: [specificationId], references: [id])
+  status          String   @default("DRAFT") // DRAFT, RELEASED, IN_PROGRESS, BLOCKED, AWAITING_QC, REWORK, READY_FOR_HANDOVER, PARTIALLY_RECEIVED, CLOSED, CANCELLED
+  targetQty       Float
+  goodQty         Float    @default(0)
+  scrapQty        Float    @default(0)
+  reworkQty       Float    @default(0)
+  priority        String   @default("NORMAL")
+  plannedStart    DateTime?
+  plannedEnd      DateTime?
+  actualStart     DateTime?
+  actualEnd       DateTime?
+  notes           String?
+  acrylicRequired Boolean  @default(false)
+  operations      Operation[]
+  handovers       ProductionHandover[]
+  inspections     QualityInspection[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Operation {
+  id            String        @id @default(uuid())
+  jobId         String
+  job           ProductionJob @relation(fields: [jobId], references: [id])
+  stage         String        // CUTTING_CNC, CUTTING_LASER, CUTTING_STATIONARY, FINISHING_PUTTY, FINISHING_SEALER, FINISHING_GRAINS, FINISHING_SPRAY, ACRYLIC, QC
+  sequenceOrder Int
+  inputQty      Float
+  outputQty     Float         @default(0)
+  scrapQty      Float         @default(0)
+  reworkQty     Float         @default(0)
+  uom           String        @default("NOS")
+  workCentreId  String?
+  instructions  String?
+  drawingRef    String?
+  plannedStart  DateTime?
+  plannedEnd    DateTime?
+  status        String        @default("PENDING") // PENDING, ASSIGNED, IN_PROGRESS, SUBMITTED, VERIFIED, REJECTED
+  tasks         Task[]
+}
+
+model Task {
+  id              String     @id @default(uuid())
+  taskCode        String     @unique
+  type            String     // FINANCE_REVIEW, STOCK_FULFIL, PRODUCTION_REQUEST, CUTTING, FINISHING, ACRYLIC, QC, STOCK_RECEIPT, DISPATCH
+  orderId         String?
+  order           Order?     @relation(fields: [orderId], references: [id])
+  operationId     String?
+  operation       Operation? @relation(fields: [operationId], references: [id])
+  assignerId      String?
+  assigner        Employee?  @relation("TaskAssigner", fields: [assignerId], references: [id])
+  assigneeId      String?
+  assignee        Employee?  @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  status          String     @default("ASSIGNED") // ASSIGNED, RECEIVED, IN_PROGRESS, SUBMITTED, VERIFIED, REJECTED, NEEDS_INFO, BLOCKED, PAUSED, CANCELLED, SUPERSEDED
+  priority        String     @default("NORMAL")
+  dueAt           DateTime?
+  instructions    String?
+  goodQty         Float?
+  scrapQty        Float?
+  reworkQty       Float?
+  rejectionReason String?
+  parentTaskId    String?
+  sourceDept      String?
+  destDept        String?
+
+  // Exact timestamps per spec §9.1
+  assignedAt      DateTime  @default(now())
+  receivedAt      DateTime?
+  startedAt       DateTime?
+  pausedAt        DateTime?
+  resumedAt       DateTime?
+  submittedAt     DateTime?
+  verifiedAt      DateTime?
+  rejectedAt      DateTime?
+
+  events          TaskEvent[]
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+}
+
+model TaskEvent {
+  id          String   @id @default(uuid())
+  taskId      String
+  task        Task     @relation(fields: [taskId], references: [id])
+  eventType   String   // ASSIGNED, RECEIVED, STARTED, PAUSED, RESUMED, SUBMITTED, VERIFIED, REJECTED, REASSIGNED
+  actorId     String?
+  reason      String?
+  goodQty     Float?
+  notes       String?
+  createdAt   DateTime @default(now())
+}
+
+model QualityInspection {
+  id             String        @id @default(uuid())
+  jobId          String
+  job            ProductionJob @relation(fields: [jobId], references: [id])
+  inspectorId    String?
+  inspectedQty   Float
+  passQty        Float         @default(0)
+  failQty        Float         @default(0)
+  holdQty        Float         @default(0)
+  scrapQty       Float         @default(0)
+  disposition    String        // PASS, REWORK, SCRAP, HOLD
+  defectCodes    String?       // comma-separated
+  checklistNotes String?
+  evidence       String?
+  cycleNumber    Int           @default(1)
+  createdAt      DateTime      @default(now())
+  reworkOrders   ReworkOrder[]
+}
+
+model ReworkOrder {
+  id               String            @id @default(uuid())
+  inspectionId     String
+  inspection       QualityInspection @relation(fields: [inspectionId], references: [id])
+  defectQty        Float
+  defectCode       String?
+  targetStage      String?
+  instructions     String?
+  ownerId          String?
+  status           String            @default("PENDING") // PENDING, IN_PROGRESS, REINSPECTED, CLOSED
+  cycleNumber      Int               @default(1)
+  createdAt        DateTime          @default(now())
+}
+
+model ProductionHandover {
+  id              String        @id @default(uuid())
+  jobId           String
+  job             ProductionJob @relation(fields: [jobId], references: [id])
+  status          String        @default("PROPOSED") // PROPOSED, READY, PARTIALLY_ACCEPTED, ACCEPTED, DISPUTED, RETURNED
+  offeredQty      Float
+  acceptedQty     Float         @default(0)
+  rejectedQty     Float         @default(0)
+  discrepancyNote String?
+  stockRecipientId String?
+  receivedAt      DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+// ─── DISPATCH ─────────────────────────────────────────────────────────────────
+
+model Shipment {
+  id              String   @id @default(uuid())
+  orderId         String
+  order           Order    @relation(fields: [orderId], references: [id])
+  shipmentNo      String   @unique
+  status          String   @default("PENDING") // PENDING, PACKED, DISPATCHED, DELIVERED
+  recipientName   String?
+  carrier         String?
+  vehicleRef      String?
+  deliveryMode    String?
+  packageCount    Int?
+  proofOfDelivery String?
+  dispatchedAt    DateTime?
+  deliveredAt     DateTime?
+  dispatchedBy    String?
+  lines           ShipmentLine[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model ShipmentLine {
+  id          String   @id @default(uuid())
+  shipmentId  String
+  shipment    Shipment @relation(fields: [shipmentId], references: [id])
+  orderLineId String?
+  productId   String?
+  description String
+  qty         Float
+  uom         String   @default("NOS")
+}
+
+// ─── NOTIFICATIONS & AUDIT ───────────────────────────────────────────────────
+
+model Notification {
+  id             String    @id @default(uuid())
+  companyId      String
+  company        Company   @relation(fields: [companyId], references: [id])
+  recipientId    String
+  recipient      Employee  @relation(fields: [recipientId], references: [id])
+  eventType      String    // ORDER_CONFIRMED, ADVANCE_CLEARED, TASK_ASSIGNED, etc.
+  title          String
+  message        String
+  targetRef      String?   // orderId, taskId, etc.
+  targetRefType  String?
+  readAt         DateTime?
+  deliveredAt    DateTime?
+  createdAt      DateTime  @default(now())
+}
+
+model AuditEvent {
+  id           String   @id @default(uuid())
+  companyId    String
+  company      Company  @relation(fields: [companyId], references: [id])
+  actorId      String?
+  actor        Employee? @relation(fields: [actorId], references: [id])
+  entityType   String   // Order, Task, Payment, etc.
+  entityId     String
+  action       String   // CREATED, UPDATED, STATUS_CHANGED, etc.
+  oldValues    String?  // JSON
+  newValues    String?  // JSON
+  reason       String?
+  requestId    String?
+  createdAt    DateTime @default(now())
+}

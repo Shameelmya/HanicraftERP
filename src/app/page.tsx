@@ -1,69 +1,289 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { AppLayout } from "@/components/layout/AppLayout";
+import { useAuth } from "@/auth/AuthContext";
+import { useEffect, useState } from "react";
+import { getDashboardStats, getMyNotifications } from "./actions/dashboard";
+import {
+  ShoppingCart,
+  CreditCard,
+  Package,
+  Factory,
+  Users,
+  TrendingUp,
+  Bell,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  ArrowRight,
+  Layers,
+} from "lucide-react";
+import Link from "next/link";
+
+function formatINR(amount: number) {
+  return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(amount);
+}
+
+function StatCard({ label, value, sub, icon: Icon, color, href }: {
+  label: string; value: string | number; sub?: string; icon: React.ElementType; color: string; href?: string;
+}) {
+  const inner = (
+    <div className="stat-card" style={{ borderTop: `3px solid ${color}` }}>
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-card-title" style={{ color }}>{label}</p>
+          <p className="stat-card-value" style={{ color: "var(--color-text-primary)" }}>{value}</p>
+          {sub && <p className="stat-card-change">{sub}</p>}
+        </div>
+        <div className="p-2 rounded-lg" style={{ background: `${color}15` }}>
+          <Icon className="w-5 h-5" style={{ color }} />
+        </div>
+      </div>
+    </div>
+  );
+  return href ? <Link href={href} className="hover:no-underline">{inner}</Link> : inner;
+}
+
+function TaskCard({ task }: { task: any }) {
+  const statusColor = task.status === "ASSIGNED" ? "#1D4ED8" : task.status === "IN_PROGRESS" ? "#6D28D9" : "#166534";
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="task-card">
+      <div className="task-card-header">
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-sm truncate">{task.taskCode}</p>
+          <p className="text-muted mt-0.5">
+            {task.operation?.job?.request?.lines?.[0]?.description ?? task.type}
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+        <span className="badge" style={{ background: `${statusColor}15`, color: statusColor }}>
+          {task.status.replace("_", " ")}
+        </span>
+      </div>
+      {task.dueAt && (
+        <p className="flex items-center gap-1" style={{ fontSize: "12px", color: "var(--color-text-muted)" }}>
+          <Clock className="w-3 h-3" />
+          Due: {new Date(task.dueAt).toLocaleDateString("en-IN")}
+        </p>
+      )}
+      <div className="task-card-actions">
+        <Link href={`/cutting`} className="btn btn-primary btn-sm">View Task</Link>
+      </div>
     </div>
+  );
+}
+
+export default function Home() {
+  const { user } = useAuth();
+  const [stats, setStats] = useState<any>(null);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    Promise.all([
+      getDashboardStats(user.id, user.role),
+      getMyNotifications(user.id),
+    ]).then(([s, n]) => {
+      setStats(s);
+      setNotifications(n.notifications ?? []);
+    }).catch(console.error).finally(() => setLoading(false));
+  }, [user]);
+
+  const role = user?.role ?? "";
+
+  return (
+    <AppLayout>
+      <div className="page-content">
+        {/* Page header */}
+        <div className="page-header flex items-start justify-between">
+          <div>
+            <h1 className="text-page-title">
+              {role === "Operator" || role === "Finishing_Supervisor" ? "My Work" : "Dashboard"}
+            </h1>
+            <p style={{ color: "var(--color-text-secondary)", marginTop: "4px" }}>
+              Good morning, <strong>{user?.name}</strong> · {user?.department ?? user?.jobTitle}
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            {notifications.filter(n => !n.readAt).length > 0 && (
+              <div className="flex items-center gap-2 badge badge-blue">
+                <Bell className="w-3.5 h-3.5" />
+                {notifications.filter(n => !n.readAt).length} unread
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Loading state */}
+        {loading && (
+          <div className="grid grid-cols-4 gap-6 mb-6">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="skeleton h-24 rounded-md" />
+            ))}
+          </div>
+        )}
+
+        {/* MD / GM Dashboard */}
+        {!loading && stats && (role === "MD" || role === "GM") && (
+          <>
+            <div className="grid grid-cols-4 gap-6 mb-6">
+              <StatCard label="Open Orders" value={stats.openOrders ?? 0} sub="this month" icon={ShoppingCart} color="#1D4ED8" href="/sales" />
+              <StatCard label="Monthly Collections" value={formatINR(stats.monthRevenue ?? 0)} sub="receipts posted" icon={CreditCard} color="#166534" href="/finance" />
+              <StatCard label="Active Jobs" value={stats.activeJobs ?? 0} sub="in production" icon={Factory} color="#6D28D9" href="/production" />
+              <StatCard label="Employees" value={stats.employeeCount ?? 0} sub="active accounts" icon={Users} color="#0F766E" href="/admin/employees" />
+            </div>
+            <div className="grid grid-cols-2 gap-6">
+              <div className="card">
+                <div className="card-header flex items-center justify-between">
+                  <h2 className="text-section-title">Recent Orders</h2>
+                  <Link href="/sales" className="btn btn-ghost btn-sm">View All <ArrowRight className="w-3 h-3" /></Link>
+                </div>
+                <div className="card-body p-0">
+                  {(stats.recentOrders ?? []).length === 0 ? (
+                    <div className="empty-state p-8">
+                      <ShoppingCart className="empty-state-icon" />
+                      <p>No orders yet</p>
+                    </div>
+                  ) : (
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          <th>Order</th>
+                          <th>Customer</th>
+                          <th>Status</th>
+                          <th className="text-right">Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(stats.recentOrders ?? []).map((order: any) => (
+                          <tr key={order.id}>
+                            <td>
+                              <Link href={`/sales/${order.id}`} className="font-medium text-sm" style={{ color: "var(--color-primary)" }}>
+                                {order.orderNo}
+                              </Link>
+                            </td>
+                            <td className="text-sm">{order.customer?.displayName}</td>
+                            <td>
+                              <span className={`badge ${order.commercialStatus === "CONFIRMED" ? "badge-blue" : "badge-gray"}`}>
+                                {order.commercialStatus}
+                              </span>
+                            </td>
+                            <td className="text-right text-sm text-tabular">
+                              {formatINR(order.totalPayable)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </div>
+              {/* Notifications */}
+              <div className="card">
+                <div className="card-header">
+                  <h2 className="text-section-title">Recent Activity</h2>
+                </div>
+                <div className="card-body p-0">
+                  {notifications.length === 0 ? (
+                    <div className="empty-state p-6">
+                      <Bell className="empty-state-icon" />
+                      <p>No notifications</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col">
+                      {notifications.slice(0, 8).map((n) => (
+                        <div key={n.id} className="flex items-start gap-3 p-4 border-b border-gray-50 last:border-b-0">
+                          <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${n.readAt ? "bg-gray-300" : "bg-blue-600"}`} />
+                          <div className="min-w-0">
+                            <p className="font-semibold text-sm truncate">{n.title}</p>
+                            <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>{n.message}</p>
+                            <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>
+                              {new Date(n.createdAt).toLocaleString("en-IN")}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Sales Dashboard */}
+        {!loading && stats && role === "Sales" && (
+          <>
+            <div className="grid grid-cols-3 gap-6 mb-6">
+              <StatCard label="Open Leads" value={stats.myLeads ?? 0} icon={Users} color="#1D4ED8" href="/customers" />
+              <StatCard label="Open Orders" value={stats.openOrders ?? 0} icon={ShoppingCart} color="#0F766E" href="/sales" />
+              <StatCard label="Ready for Pickup" value={stats.readyOrders ?? 0} sub="awaiting dispatch" icon={CheckCircle} color="#166534" href="/sales?status=READY" />
+            </div>
+            <div className="card">
+              <div className="card-header">
+                <h2 className="text-section-title">Quick Actions</h2>
+              </div>
+              <div className="card-body flex gap-4">
+                <Link href="/sales/new" className="btn btn-primary btn-lg">
+                  <ShoppingCart className="w-4 h-4" /> New Sale
+                </Link>
+                <Link href="/customers" className="btn btn-secondary btn-lg">
+                  <Users className="w-4 h-4" /> Find Customer
+                </Link>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Finance Dashboard */}
+        {!loading && stats && role === "Finance" && (
+          <div className="grid grid-cols-3 gap-6 mb-6">
+            <StatCard label="Pending Advance" value={stats.pending ?? 0} sub="orders awaiting payment" icon={AlertTriangle} color="#92400E" href="/finance" />
+            <StatCard label="Monthly Collections" value={formatINR(stats.monthCollections ?? 0)} icon={CreditCard} color="#166534" href="/finance" />
+            <StatCard label="Overdue" value={stats.overdueCount ?? 0} sub="past promise date" icon={Clock} color="#B91C1C" href="/finance?filter=overdue" />
+          </div>
+        )}
+
+        {/* Stock Dashboard */}
+        {!loading && stats && role === "Stock" && (
+          <div className="grid grid-cols-4 gap-6 mb-6">
+            <StatCard label="Active Products" value={stats.totalActive ?? 0} icon={Package} color="#0F766E" href="/stock" />
+            <StatCard label="Needs Verification" value={stats.belowMin ?? 0} sub="unverified stock items" icon={AlertTriangle} color="#92400E" href="/stock?filter=verify" />
+            <StatCard label="Pending Receipts" value={stats.pendingReceipts ?? 0} sub="from production" icon={Factory} color="#6D28D9" href="/stock?filter=receipts" />
+            <StatCard label="Fulfilment Queue" value={stats.pendingFulfil ?? 0} sub="advance cleared orders" icon={Layers} color="#1D4ED8" href="/stock?filter=fulfil" />
+          </div>
+        )}
+
+        {/* Production Dashboard */}
+        {!loading && stats && role === "Production_Supervisor" && (
+          <div className="grid grid-cols-3 gap-6 mb-6">
+            <StatCard label="New Requests" value={stats.pendingRequests ?? 0} sub="from Stock" icon={Package} color="#B91C1C" href="/production" />
+            <StatCard label="Active Jobs" value={stats.activeJobs ?? 0} icon={Factory} color="#6D28D9" href="/production?filter=active" />
+            <StatCard label="Overdue Jobs" value={stats.overdueJobs ?? 0} sub="past planned end" icon={AlertTriangle} color="#92400E" href="/production?filter=overdue" />
+          </div>
+        )}
+
+        {/* Operator / Worker Dashboard */}
+        {!loading && stats && (role === "Operator" || role === "Finishing_Supervisor") && (
+          <>
+            <div className="mb-6">
+              <h2 className="text-section-title mb-4">My Assigned Tasks</h2>
+              {(stats.myTasks ?? []).length === 0 ? (
+                <div className="empty-state card p-8">
+                  <CheckCircle className="empty-state-icon" style={{ color: "#166534" }} />
+                  <p style={{ color: "var(--color-text-secondary)" }}>No tasks assigned. Check back shortly.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-4">
+                  {(stats.myTasks ?? []).map((task: any) => (
+                    <TaskCard key={task.id} task={task} />
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </AppLayout>
   );
 }
