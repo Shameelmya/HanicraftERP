@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/auth/AuthContext';
 import { useEffect, useState } from 'react';
-import { getDepartments, getEmployees, createDepartment, createEmployee } from '../actions/settings';
+import { getDepartments, getEmployees, createDepartment, createEmployee, updateMyProfile } from '../actions/settings';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function SettingsPage() {
@@ -22,16 +22,51 @@ export default function SettingsPage() {
   const [newEmpRole, setNewEmpRole] = useState("");
   const [newEmpDept, setNewEmpDept] = useState("");
 
+  const [myName, setMyName] = useState("");
+  const [myPhone, setMyPhone] = useState("");
+  const [myWhatsapp, setMyWhatsapp] = useState("");
+  const [myPhoto, setMyPhoto] = useState("");
+  const [savingProfile, setSavingProfile] = useState(false);
+
   const fetchData = async () => {
     const depts = await getDepartments();
     const emps = await getEmployees();
     setDepartments(depts);
     setEmployees(emps);
+    
+    if (user) {
+      const myEmp = emps.find(e => e.email === user.email);
+      if (myEmp) {
+        setMyName(myEmp.name || "");
+        setMyPhone(myEmp.phone || "");
+        setMyWhatsapp(myEmp.whatsapp || "");
+        setMyPhoto(myEmp.photoUrl || "");
+      }
+    }
   };
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [user]);
+
+  const handleSaveProfile = async () => {
+    if (!user?.email) return;
+    setSavingProfile(true);
+    try {
+      await updateMyProfile(user.email, {
+        name: myName,
+        phone: myPhone,
+        whatsapp: myWhatsapp,
+        photoUrl: myPhoto
+      });
+      alert("Profile updated successfully! Refreshing...");
+      window.location.reload();
+    } catch (e) {
+      alert("Error saving profile");
+    } finally {
+      setSavingProfile(false);
+    }
+  };
 
   const handleCreateDept = async () => {
     if (!newDeptName || !user?.email) return;
@@ -71,18 +106,36 @@ export default function SettingsPage() {
               <CardDescription>Your personal information.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="flex items-center gap-4 mb-2">
+                <div className="h-16 w-16 rounded-full bg-slate-200 overflow-hidden border">
+                  {myPhoto ? <img src={myPhoto} alt="Profile" className="h-full w-full object-cover" /> : <div className="h-full w-full flex items-center justify-center text-slate-400">?</div>}
+                </div>
+                <div className="text-sm text-slate-500">Profile Picture Preview</div>
+              </div>
               <div className="space-y-2">
                 <Label>Full Name</Label>
-                <Input defaultValue={user?.name || ""} disabled className="bg-slate-100 text-slate-500" />
+                <Input value={myName} onChange={e => setMyName(e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>Email Address</Label>
                 <Input defaultValue={user?.email || ""} disabled className="bg-slate-100 text-slate-500" />
               </div>
               <div className="space-y-2">
-                <Label>Role</Label>
-                <Input defaultValue={user?.role || ""} disabled className="bg-slate-100 text-slate-500" />
+                <Label>Phone Number</Label>
+                <Input placeholder="+91..." value={myPhone} onChange={e => setMyPhone(e.target.value)} />
               </div>
+              <div className="space-y-2">
+                <Label>WhatsApp Number</Label>
+                <Input placeholder="+91..." value={myWhatsapp} onChange={e => setMyWhatsapp(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Profile Photo Link</Label>
+                <Input placeholder="https://..." value={myPhoto} onChange={e => setMyPhoto(e.target.value)} />
+                <p className="text-xs text-slate-500">Paste an image link to show on your profile.</p>
+              </div>
+              <Button onClick={handleSaveProfile} disabled={savingProfile} className="w-full bg-blue-600 hover:bg-blue-700 text-white mt-4">
+                {savingProfile ? "Saving..." : "Save Profile"}
+              </Button>
             </CardContent>
           </Card>
 

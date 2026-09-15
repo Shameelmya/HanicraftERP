@@ -10,6 +10,13 @@ function generateTaskCode(count: number): string {
   return `TSK-${new Date().getFullYear()}-${String(count + 1).padStart(6, "0")}`;
 }
 
+export async function updateProductImage(productId: string, imageUrl: string) {
+  return await db.product.update({
+    where: { id: productId },
+    data: { imageUrl }
+  });
+}
+
 /**
  * STK-01/STK-02: Reserve stock for an order line — atomic, no over-allocation.
  */

@@ -68,36 +68,47 @@ export async function getDashboardStats(employeeId?: string, role?: string) {
   const [
     totalOrders,
     monthRevenue,
-    openOrders,
-    pendingPayments,
     activeJobs,
     totalProducts,
     employeeCount,
+    ordersQuery,
   ] = await Promise.all([
     db.order.count({ where: { createdAt: { gte: startOfMonth } } }),
     db.payment.aggregate({ where: { status: "POSTED_CLEARED", createdAt: { gte: startOfMonth } }, _sum: { amount: true } }),
-    db.order.count({ where: { commercialStatus: "CONFIRMED", fulfilmentStatus: { not: "DISPATCHED" } } }),
-    db.order.count({ where: { paymentStatus: { in: ["NO_PAYMENT", "ADVANCE_PENDING"] } } }),
     db.productionJob.count({ where: { status: { in: ["IN_PROGRESS", "RELEASED", "AWAITING_QC"] } } }),
     db.product.count({ where: { isActive: true } }),
     db.employee.count({ where: { status: "ACTIVE" } }),
+    db.order.findMany({
+      select: { id: true, orderNo: true, commercialStatus: true, fulfilmentStatus: true, paymentStatus: true, totalPayable: true, customer: { select: { displayName: true } } },
+      orderBy: { createdAt: "desc" },
+      take: 8,
+    }),
   ]);
 
-  const recentOrders = await db.order.findMany({
-    include: { customer: { include: { contacts: true } } },
-    orderBy: { createdAt: "desc" },
-    take: 8,
-  });
+  let openOrders = 0;
+  let pendingPayments = 0;
+  
+  for (const o of ordersQuery) {
+     if (o.commercialStatus === "CONFIRMED" && o.fulfilmentStatus !== "DISPATCHED") openOrders++;
+     if (o.paymentStatus === "NO_PAYMENT" || o.paymentStatus === "ADVANCE_PENDING") pendingPayments++;
+  }
+
+  // We actually need global counts for openOrders and pendingPayments, not just the last 8.
+  // Wait, I shouldn't break the logic. Let's just do the counts efficiently.
+  const [globalOpenOrders, globalPendingPayments] = await Promise.all([
+    db.order.count({ where: { commercialStatus: "CONFIRMED", fulfilmentStatus: { not: "DISPATCHED" } } }),
+    db.order.count({ where: { paymentStatus: { in: ["NO_PAYMENT", "ADVANCE_PENDING"] } } })
+  ]);
 
   return {
     totalOrders,
     monthRevenue: monthRevenue._sum.amount ?? 0,
-    openOrders,
-    pendingPayments,
+    openOrders: globalOpenOrders,
+    pendingPayments: globalPendingPayments,
     activeJobs,
     totalProducts,
     employeeCount,
-    recentOrders,
+    recentOrders: ordersQuery,
   };
 }
 

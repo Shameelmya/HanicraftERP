@@ -28,7 +28,7 @@ export default function ProductionAssignments() {
       setLoading(true);
       const [emps, activeJobs] = await Promise.all([
         getShopFloorEmployees(),
-        getProductionJobs("IN_PROGRESS") // Only fetch jobs in progress
+        getProductionJobs({ status: "IN_PROGRESS" }) // Only fetch jobs in progress
       ]);
       
       // Filter out MD/Admins to only show Operators/Production staff
@@ -102,7 +102,7 @@ export default function ProductionAssignments() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>1. Select Active Job</Label>
-                <Select value={selectedJob} onValueChange={setSelectedJob}>
+                <Select value={selectedJob} onValueChange={(val) => setSelectedJob(val as string)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select a Job..." />
                   </SelectTrigger>
@@ -116,7 +116,7 @@ export default function ProductionAssignments() {
 
               <div className="space-y-2">
                 <Label>2. Select Operation / Stage</Label>
-                <Select value={selectedOperation} onValueChange={setSelectedOperation} disabled={!selectedJob}>
+                <Select value={selectedOperation} onValueChange={(val) => setSelectedOperation(val as string)} disabled={!selectedJob}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select an operation..." />
                   </SelectTrigger>
@@ -136,7 +136,7 @@ export default function ProductionAssignments() {
 
             <div className="space-y-2 pt-4 border-t border-slate-100">
               <Label>3. Assign to Worker</Label>
-              <Select value={selectedWorker} onValueChange={setSelectedWorker}>
+              <Select value={selectedWorker} onValueChange={(val) => setSelectedWorker(val as string)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select a worker..." />
                 </SelectTrigger>

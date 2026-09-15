@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { Search, Plus, ArrowRightLeft, AlertTriangle } from "lucide-react";
+import { Search, Plus, ArrowRightLeft, AlertTriangle, Edit3, Image as ImageIcon } from "lucide-react";
+import { updateProductImage } from "@/app/actions/stock";
 
 type StockProduct = {
   id: string;
@@ -20,10 +21,27 @@ type StockProduct = {
 };
 
 export const StockTable: React.FC<{ initialData: StockProduct[] }> = ({ initialData }) => {
+  const [data, setData] = useState<StockProduct[]>(initialData);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [updating, setUpdating] = useState<string | null>(null);
 
-  const filtered = initialData.filter((p) =>
+  const handleEditImage = async (productId: string) => {
+    const url = window.prompt("Enter new image URL for this product:");
+    if (!url) return;
+    
+    setUpdating(productId);
+    try {
+      await updateProductImage(productId, url);
+      setData(prev => prev.map(p => p.id === productId ? { ...p, imageUrl: url } : p));
+    } catch (e) {
+      alert("Failed to update image");
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const filtered = data.filter((p) =>
     p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     p.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (p.category ?? "").toLowerCase().includes(searchQuery.toLowerCase())
@@ -77,35 +95,36 @@ export const StockTable: React.FC<{ initialData: StockProduct[] }> = ({ initialD
               </tr>
             ) : (
               filtered.map((product) => (
-                <tr key={product.id}>
+                <tr key={product.id} className="group hover:bg-slate-50 transition-colors">
+                  <td className="w-16">
+                    <div className="relative w-10 h-10 rounded border bg-slate-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+                      {product.imageUrl ? (
+                        <img 
+                          src={product.imageUrl} 
+                          alt={product.name} 
+                          className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() => setSelectedImage(product.imageUrl!)}
+                        />
+                      ) : (
+                        <ImageIcon className="w-4 h-4 text-slate-400" />
+                      )}
+                      <button 
+                        onClick={() => handleEditImage(product.id)}
+                        disabled={updating === product.id}
+                        className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <Edit3 className="w-4 h-4 text-white" />
+                      </button>
+                    </div>
+                  </td>
+                  <td className="font-medium text-slate-900">{product.sku}</td>
                   <td>
-                    {product.imageUrl ? (
-                      <img
-                        src={product.imageUrl}
-                        alt={product.name}
-                        className="w-10 h-10 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
-                        onClick={() => setSelectedImage(product.imageUrl!)}
-                      />
-                    ) : (
-                      <div className="w-10 h-10 rounded flex items-center justify-center text-xs" style={{ background: "var(--color-bg)", color: "var(--color-text-muted)" }}>
-                        N/A
-                      </div>
-                    )}
+                    <div className="font-medium">{product.name}</div>
                   </td>
-                  <td>
-                    <span className="font-medium" style={{ color: "var(--color-primary)", fontFamily: "monospace" }}>
-                      {product.sku}
-                    </span>
-                  </td>
-                  <td className="font-medium">{product.name}</td>
-                  <td>
-                    <span className="badge badge-gray">{product.category ?? "—"}</span>
-                  </td>
-                  <td className="text-right text-tabular text-sm">
-                    {product.latestPrice > 0 ? `₹${product.latestPrice.toLocaleString("en-IN")}` : "—"}
-                  </td>
-                  <td className="text-right text-tabular font-medium">{product.physical}</td>
-                  <td className="text-right text-tabular" style={{ color: product.reserved > 0 ? "#92400E" : "inherit" }}>
+                  <td>{product.category ?? "—"}</td>
+                  <td className="text-right text-tabular font-medium">₹ {product.latestPrice.toFixed(2)}</td>
+                  <td className="text-right text-tabular">{product.physical}</td>
+                  <td className="text-right text-tabular text-sm" style={{ color: "var(--color-text-muted)" }}>
                     {product.reserved}
                   </td>
                   <td className="text-right text-tabular font-bold" style={{ color: product.available > 0 ? "#166534" : "#B91C1C" }}>
