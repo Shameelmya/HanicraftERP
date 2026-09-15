@@ -46,7 +46,7 @@ export const CustomerSearchPanel: React.FC = () => {
               <input
                 type="text"
                 placeholder="Enter 10-digit mobile number"
-                className="input pl-10 h-10 w-full text-lg font-medium"
+                className="input !pl-10 h-10 w-full text-lg font-medium"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
               />
