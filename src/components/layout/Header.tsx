@@ -52,7 +52,15 @@ export const Header: React.FC<{ sidebarOpen: boolean; setSidebarOpen: (v: boolea
           <Menu className="h-5 w-5" />
         </Button>
         
-        <div className="max-w-md w-full hidden md:flex items-center relative">
+        {/* Company Logo in Header */}
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm">
+            <span className="text-white font-black text-sm">H</span>
+          </div>
+          <span className="font-extrabold text-lg text-slate-800 tracking-tight hidden sm:block">Hanicraft</span>
+        </div>
+
+        <div className="max-w-md w-full hidden md:flex items-center relative ml-4">
           <Search className="h-4 w-4 absolute left-3 text-gray-400" />
           <Input 
             placeholder="Search customers, orders, products..." 
@@ -61,78 +69,10 @@ export const Header: React.FC<{ sidebarOpen: boolean; setSidebarOpen: (v: boolea
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
-        <DropdownMenu open={bellOpen} onOpenChange={setBellOpen}>
-          <DropdownMenuTrigger className="relative flex h-10 w-10 items-center justify-center rounded-full text-slate-500 hover:text-slate-700 hover:bg-slate-100 cursor-pointer transition-colors outline-none focus-visible:ring-2 focus-visible:ring-blue-500 border-none bg-transparent">
-            <Bell className="h-5 w-5" />
-            {unreadCount > 0 && (
-              <span className="absolute top-0 right-0 transform translate-x-1/4 -translate-y-1/4 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white border-2 border-white shadow-sm">
-                {unreadCount}
-              </span>
-            )}
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-80" align="end">
-            <DropdownMenuLabel>Notifications</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <div className="max-h-96 overflow-y-auto">
-              {notifications.map(n => (
-                <DropdownMenuItem key={n.id} className="flex flex-col items-start cursor-pointer p-3 border-b" onClick={() => {
-                  import('@/app/actions/notifications').then(({ markNotificationRead }) => {
-                    markNotificationRead(n.id).then(() => {
-                      setNotifications(notifications.map(x => x.id === n.id ? { ...x, readAt: new Date() } : x));
-                    });
-                  });
-                }}>
-                  <div className="flex justify-between w-full">
-                    <span className="font-bold text-sm text-slate-800">{n.title}</span>
-                    {!n.readAt && <span className="h-2 w-2 bg-blue-600 rounded-full"></span>}
-                  </div>
-                  <span className="text-xs text-slate-500 mt-1 line-clamp-2">{n.message}</span>
-                </DropdownMenuItem>
-              ))}
-              {notifications.length === 0 && (
-                <div className="p-4 text-center text-sm text-slate-500">No notifications</div>
-              )}
-            </div>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger className="relative h-10 w-10 rounded-full p-0 overflow-hidden ring-2 ring-slate-100 hover:ring-blue-200 transition-all focus-visible:ring-blue-500 outline-none flex items-center justify-center bg-transparent border-0 cursor-pointer">
-            <Avatar className="h-full w-full">
-              {user?.photoUrl ? (
-                <img src={user.photoUrl} alt="Profile" className="h-full w-full object-cover" />
-              ) : (
-                <AvatarFallback className="bg-gradient-to-br from-blue-50 to-blue-100 text-blue-700 font-bold text-sm">
-                  {user?.name?.substring(0, 2).toUpperCase() || "US"}
-                </AvatarFallback>
-              )}
-            </Avatar>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56" align="end">
-            <DropdownMenuLabel className="font-normal">
-              <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">{user?.name}</p>
-                <p className="text-xs leading-none text-gray-500">
-                  {user?.role} - {typeof user?.department === 'object' ? (user.department as any)?.name : user?.department}
-                </p>
-              </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => window.location.href = "/settings"} className="flex items-center w-full cursor-pointer">
-              <User className="mr-2 h-4 w-4" />
-              <span>Profile</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => window.location.href = "/settings"} className="flex items-center w-full cursor-pointer">
-              <Settings className="mr-2 h-4 w-4" />
-              <span>Preferences</span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={logout} className="text-red-600 focus:text-red-600 cursor-pointer">
-              Log out
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+      <div className="flex items-center gap-4">
+        <Button variant="destructive" size="sm" onClick={logout} className="font-bold tracking-wide shadow-sm">
+          Log out
+        </Button>
       </div>
     </header>
   );

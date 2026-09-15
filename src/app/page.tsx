@@ -39,20 +39,22 @@ function StatCard({ label, value, sub, icon: Icon, color, href }: {
   const theme = gradientMap[color] || { bg: "bg-gradient-to-br from-slate-400 to-slate-500", iconBg: "bg-white/20", text: "text-white", titleText: "text-slate-50", subText: "text-slate-100" };
   
   const inner = (
-    <div className={`p-6 rounded-xl shadow-sm border-0 transition-all hover:shadow-md ${theme.bg}`}>
+    <div className={`p-6 rounded-xl shadow-sm border-0 h-full flex flex-col justify-between transition-all hover:shadow-md ${theme.bg}`}>
       <div className="flex items-start justify-between">
         <div>
           <p className={`text-xs font-bold uppercase tracking-wider mb-1 ${theme.titleText}`}>{label}</p>
           <p className={`text-3xl font-extrabold ${theme.text}`}>{value}</p>
-          {sub && <p className={`text-xs mt-2 font-medium ${theme.subText}`}>{sub}</p>}
         </div>
         <div className={`p-3 rounded-xl shadow-sm ${theme.iconBg}`}>
           <Icon className={`w-6 h-6 ${theme.text}`} />
         </div>
       </div>
+      <div className="mt-auto pt-2 min-h-[24px]">
+        {sub && <p className={`text-xs font-medium ${theme.subText}`}>{sub}</p>}
+      </div>
     </div>
   );
-  return href ? <Link href={href} className="hover:no-underline hover:-translate-y-1 block transition-transform">{inner}</Link> : inner;
+  return href ? <Link href={href} className="hover:no-underline hover:-translate-y-1 block h-full transition-transform">{inner}</Link> : inner;
 }
 
 function TaskCard({ task }: { task: any }) {

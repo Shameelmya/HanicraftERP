@@ -200,10 +200,10 @@ export const Sidebar: React.FC<{ open: boolean; setOpen: (v: boolean) => void }>
         ))}
       </nav>
 
-      {/* User profile dropdown moved to bottom of sidebar */}
+      {/* User profile moved to bottom of sidebar */}
       <div className="border-t border-gray-100 p-3">
         {user && (
-          <div className={`flex items-center ${open ? 'gap-3 px-2 py-2' : 'justify-center'} rounded-lg bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors`}>
+          <Link href="/settings" className={`flex items-center ${open ? 'gap-3 px-2 py-2' : 'justify-center'} rounded-lg bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors`}>
             <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0 shadow-sm">
               <span className="text-white text-xs font-bold">{user.name.charAt(0).toUpperCase()}</span>
             </div>
@@ -213,7 +213,7 @@ export const Sidebar: React.FC<{ open: boolean; setOpen: (v: boolean) => void }>
                 <div className="text-[10px] text-gray-500 truncate uppercase tracking-wider">{user.role}</div>
               </div>
             )}
-          </div>
+          </Link>
         )}
       </div>
     </aside>
