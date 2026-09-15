@@ -84,13 +84,11 @@ export const Header: React.FC<{ sidebarOpen: boolean; setSidebarOpen: (v: boolea
 
       <div className="flex items-center gap-2">
         <DropdownMenu open={bellOpen} onOpenChange={setBellOpen}>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="w-5 h-5 text-slate-600" />
-              {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />
-              )}
-            </Button>
+          <DropdownMenuTrigger className="relative h-10 w-10 flex items-center justify-center rounded-md hover:bg-slate-100 transition-colors">
+            <Bell className="w-5 h-5 text-slate-600" />
+            {unreadCount > 0 && (
+              <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />
+            )}
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-80">
             <DropdownMenuLabel>Notifications ({unreadCount} new)</DropdownMenuLabel>

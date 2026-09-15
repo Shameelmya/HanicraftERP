@@ -195,6 +195,6 @@ export async function convertLeadToOrder(leadId: string, ownerEmployeeId?: strin
   });
 
   // Mark lead as won
-  await updateLeadStage(lead.id, "WON", `Converted to Order ${order.orderNo}`);
+  await updateLeadStage(lead.id, "WON", `Converted to Order ${order.order.orderNo}`);
   return order;
 }
