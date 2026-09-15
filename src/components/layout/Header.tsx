@@ -67,10 +67,11 @@ export const Header: React.FC<{ sidebarOpen: boolean; setSidebarOpen: (v: boolea
         
         {/* Company Logo in Header */}
         <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm">
-            <span className="text-white font-black text-sm">H</span>
-          </div>
-          <span className="font-extrabold text-lg text-slate-800 tracking-tight hidden sm:block">Hanicraft</span>
+          <img 
+            src="https://hanicraft.in/web/assets/images/logo/logo.png" 
+            alt="Hanicraft Logo" 
+            className="h-8 object-contain"
+          />
         </Link>
 
         <div className="max-w-md w-full hidden md:flex items-center relative ml-4">
