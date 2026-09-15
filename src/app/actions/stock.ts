@@ -494,7 +494,7 @@ export async function receiveProductionHandover(data: {
 export async function getPendingStockAssessments() {
   return await db.order.findMany({
     where: {
-      status: "CONFIRMED", // After Finance Review, status is CONFIRMED
+      commercialStatus: "CONFIRMED", // After Finance Review, status is CONFIRMED
       OR: [
         { lines: { some: { stockStatus: "PENDING_ASSESSMENT" } } },
         { lines: { some: { stockStatus: "PARTIALLY_ALLOCATED" } } },
@@ -539,7 +539,7 @@ export async function markOrderReady(orderId: string, actorId: string) {
       });
       await tx.order.update({
         where: { id: orderId },
-        data: { status: "PROCESSING" },
+        data: { fulfilmentStatus: "READY" },
       });
     }
 

@@ -319,7 +319,7 @@ export async function getFinanceDashboard() {
 export async function getPendingFinanceReviews() {
   return await db.order.findMany({
     where: {
-      status: "DRAFT", // Or pending finance review specific status
+      commercialStatus: "DRAFT", // Or pending finance review specific status
     },
     include: {
       customer: true,
@@ -347,7 +347,7 @@ export async function approveOrderFinance(orderId: string, actorId: string, cust
     // Set order to CONFIRMED so it moves to Stock Assessment
     const order = await tx.order.update({
       where: { id: orderId },
-      data: { status: "CONFIRMED" }
+      data: { commercialStatus: "CONFIRMED" }
     });
 
     return order;

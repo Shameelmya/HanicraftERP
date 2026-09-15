@@ -24,15 +24,15 @@ export async function getDashboardStats(employeeId?: string, role?: string) {
       db.order.count({ where: { paymentStatus: { in: ["NO_PAYMENT", "ADVANCE_PENDING"] } } }),
       db.payment.aggregate({ where: { status: "POSTED_CLEARED", createdAt: { gte: startOfMonth } }, _sum: { amount: true } }),
       db.order.count({ where: { promiseDate: { lt: today }, paymentStatus: { not: "FULLY_PAID" }, commercialStatus: { not: "CANCELLED" } } }),
-      db.order.count({ where: { status: "DRAFT" } }), // Assuming DRAFT means pending finance review
-      db.order.findMany({ where: { status: "DRAFT" }, include: { customer: true }, take: 10, orderBy: { createdAt: "asc" } })
+      db.order.count({ where: { commercialStatus: "DRAFT" } }), // Assuming DRAFT means pending finance review
+      db.order.findMany({ where: { commercialStatus: "DRAFT" }, include: { customer: true }, take: 10, orderBy: { createdAt: "asc" } })
     ]);
     return { pending, monthCollections: monthCollections._sum.amount ?? 0, overdueCount, pendingReviews: pendingReviewsCount, pendingReviewOrders };
   }
 
   if (role === "Stock") {
     const stockPendingWhere = { 
-      status: "CONFIRMED", 
+      commercialStatus: "CONFIRMED", 
       OR: [
         { lines: { some: { stockStatus: "PENDING_ASSESSMENT" } } },
         { lines: { some: { stockStatus: "PARTIALLY_ALLOCATED" } } },
