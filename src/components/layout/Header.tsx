@@ -66,7 +66,7 @@ export const Header: React.FC<{ sidebarOpen: boolean; setSidebarOpen: (v: boolea
           <img 
             src="https://hanicraft.in/web/assets/images/logo/logo.png" 
             alt="Hanicraft Logo" 
-            className="h-8 object-contain"
+            className="h-10 object-contain"
           />
         </Link>
 

@@ -250,21 +250,80 @@ export default function Home() {
 
         {/* Finance Dashboard */}
         {!loading && stats && role === "Finance" && (
-          <div className="grid grid-cols-3 gap-6 mb-6">
-            <StatCard label="Pending Advance" value={stats.pending ?? 0} sub="orders awaiting payment" icon={AlertTriangle} color="#92400E" href="/finance" />
-            <StatCard label="Monthly Collections" value={formatINR(stats.monthCollections ?? 0)} icon={CreditCard} color="#166534" href="/finance" />
-            <StatCard label="Overdue" value={stats.overdueCount ?? 0} sub="past promise date" icon={Clock} color="#B91C1C" href="/finance?filter=overdue" />
-          </div>
+          <>
+            <div className="grid grid-cols-4 gap-6 mb-6">
+              <StatCard label="Pending Advance" value={stats.pending ?? 0} sub="orders awaiting payment" icon={AlertTriangle} color="#92400E" href="/finance" />
+              <StatCard label="Monthly Collections" value={formatINR(stats.monthCollections ?? 0)} icon={CreditCard} color="#166534" href="/finance" />
+              <StatCard label="Overdue" value={stats.overdueCount ?? 0} sub="past promise date" icon={Clock} color="#B91C1C" href="/finance?filter=overdue" />
+              <StatCard label="Pending Review" value={stats.pendingReviews ?? 0} sub="needs custom pricing" icon={AlertTriangle} color="#1D4ED8" href="/finance" />
+            </div>
+            
+            <div className="mb-6">
+              <h2 className="text-section-title mb-4">My Assigned Tasks (Pending Review)</h2>
+              {(stats.pendingReviewOrders ?? []).length === 0 ? (
+                <div className="empty-state card p-8">
+                  <CheckCircle className="empty-state-icon" style={{ color: "#166534" }} />
+                  <p style={{ color: "var(--color-text-secondary)" }}>No orders pending review.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-4">
+                  {(stats.pendingReviewOrders ?? []).map((order: any) => (
+                    <div key={order.id} className="task-card">
+                      <div className="task-card-header">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm truncate">{order.orderNo}</p>
+                          <p className="text-muted mt-0.5">{order.customer?.displayName}</p>
+                        </div>
+                        <span className="badge badge-blue">Pending Review</span>
+                      </div>
+                      <div className="task-card-actions">
+                        <Link href={`/finance/review/${order.id}`} className="btn btn-primary btn-sm">Review Order</Link>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
         )}
 
         {/* Stock Dashboard */}
         {!loading && stats && role === "Stock" && (
-          <div className="grid grid-cols-4 gap-6 mb-6">
-            <StatCard label="Active Products" value={stats.totalActive ?? 0} icon={Package} color="#0F766E" href="/stock" />
-            <StatCard label="Needs Verification" value={stats.belowMin ?? 0} sub="unverified stock items" icon={AlertTriangle} color="#92400E" href="/stock?filter=verify" />
-            <StatCard label="Pending Receipts" value={stats.pendingReceipts ?? 0} sub="from production" icon={Factory} color="#6D28D9" href="/stock?filter=receipts" />
-            <StatCard label="Fulfilment Queue" value={stats.pendingFulfil ?? 0} sub="advance cleared orders" icon={Layers} color="#1D4ED8" href="/stock?filter=fulfil" />
-          </div>
+          <>
+            <div className="grid grid-cols-4 gap-6 mb-6">
+              <StatCard label="Active Products" value={stats.totalActive ?? 0} icon={Package} color="#0F766E" href="/stock" />
+              <StatCard label="Needs Verification" value={stats.belowMin ?? 0} sub="unverified stock items" icon={AlertTriangle} color="#92400E" href="/stock?filter=verify" />
+              <StatCard label="Pending Receipts" value={stats.pendingReceipts ?? 0} sub="from production" icon={Factory} color="#6D28D9" href="/stock?filter=receipts" />
+              <StatCard label="Pending Assessments" value={stats.pendingAssessments ?? 0} sub="orders waiting allocation" icon={Layers} color="#1D4ED8" href="/stock" />
+            </div>
+            
+            <div className="mb-6">
+              <h2 className="text-section-title mb-4">My Assigned Tasks (Stock Assessment)</h2>
+              {(stats.pendingAssessmentOrders ?? []).length === 0 ? (
+                <div className="empty-state card p-8">
+                  <CheckCircle className="empty-state-icon" style={{ color: "#166534" }} />
+                  <p style={{ color: "var(--color-text-secondary)" }}>No orders pending stock assessment.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-4">
+                  {(stats.pendingAssessmentOrders ?? []).map((order: any) => (
+                    <div key={order.id} className="task-card">
+                      <div className="task-card-header">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm truncate">{order.orderNo}</p>
+                          <p className="text-muted mt-0.5">{order.customer?.displayName}</p>
+                        </div>
+                        <span className="badge badge-blue">Needs Assessment</span>
+                      </div>
+                      <div className="task-card-actions">
+                        <Link href={`/stock/assessment/${order.id}`} className="btn btn-primary btn-sm">Assess Stock</Link>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
         )}
 
         {/* Production Dashboard */}

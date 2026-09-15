@@ -127,61 +127,68 @@ export default function LeadsPage() {
           </Button>
         </div>
 
+        {/* Add Lead Modal Overlay */}
         {isAdding && (
-          <div className="card p-6 mb-6">
-            <h2 className="text-lg font-bold mb-4">Add New Lead</h2>
-            <div className="grid grid-cols-3 gap-4 mb-6">
-              <div>
-                <label className="block text-sm mb-1">Customer Name *</label>
-                <Input value={newLead.customerName} onChange={e => setNewLead({...newLead, customerName: e.target.value})} />
-              </div>
-              <div>
-                <label className="block text-sm mb-1">Phone Number *</label>
-                <Input value={newLead.phone} onChange={e => setNewLead({...newLead, phone: e.target.value})} />
-              </div>
-              <div>
-                <label className="block text-sm mb-1">Source</label>
-                <select className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm" value={newLead.source} onChange={e => setNewLead({...newLead, source: e.target.value})}>
-                  <option value="PHONE">Phone</option>
-                  <option value="WHATSAPP">WhatsApp</option>
-                  <option value="WALK_IN">Walk-in</option>
-                  <option value="REFERRAL">Referral</option>
-                  <option value="EXHIBITION">Exhibition</option>
-                </select>
-              </div>
-              <div className="col-span-3">
-                <label className="block text-sm mb-1">Requirement Summary</label>
-                <Input value={newLead.requirementSummary} onChange={e => setNewLead({...newLead, requirementSummary: e.target.value})} />
-              </div>
-            </div>
-
-            <div className="mb-6">
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="font-semibold text-slate-800">Requirements & Products</h3>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => addLine("CATALOGUE")}>+ Stock Item</Button>
-                  <Button variant="outline" size="sm" onClick={() => addLine("CUSTOM")}>+ Custom Item</Button>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl my-auto p-6 max-h-[90vh] flex flex-col">
+              <h2 className="text-xl font-bold mb-4 shrink-0">Add New Lead</h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 shrink-0">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Customer Name *</label>
+                  <Input value={newLead.customerName} onChange={e => setNewLead({...newLead, customerName: e.target.value})} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Phone Number *</label>
+                  <Input value={newLead.phone} onChange={e => setNewLead({...newLead, phone: e.target.value})} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Source</label>
+                  <select 
+                    className="w-full border-gray-300 rounded-md shadow-sm h-10 px-3"
+                    value={newLead.source} 
+                    onChange={e => setNewLead({...newLead, source: e.target.value})}
+                  >
+                    <option value="Phone">Phone</option>
+                    <option value="Email">Email</option>
+                    <option value="Website">Website</option>
+                    <option value="Referral">Referral</option>
+                    <option value="Other">Other</option>
+                  </select>
                 </div>
               </div>
               
-              <div className="border rounded-md overflow-hidden">
-                <table className="w-full text-sm text-left">
-                  <thead className="bg-slate-50 text-slate-600 font-semibold border-b">
+              <div className="mb-6 shrink-0">
+                <label className="block text-sm font-medium mb-1">Requirement Summary</label>
+                <Input value={newLead.requirementSummary} onChange={e => setNewLead({...newLead, requirementSummary: e.target.value})} />
+              </div>
+
+              <div className="mb-4 flex-1 overflow-auto border rounded-lg shadow-inner bg-white">
+                <div className="flex justify-between items-center p-3 border-b bg-slate-50 sticky top-0 z-10">
+                  <h3 className="font-semibold text-sm">Requirements & Products</h3>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => addLine("CATALOGUE")}>+ Stock Item</Button>
+                    <Button variant="outline" size="sm" onClick={() => addLine("CUSTOM")}>+ Custom Item</Button>
+                  </div>
+                </div>
+                
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-slate-50 border-b sticky top-12 z-10">
                     <tr>
-                      <th className="px-4 py-2">Type</th>
-                      <th className="px-4 py-2">Item / Description</th>
-                      <th className="px-4 py-2 w-48">Notes</th>
-                      <th className="px-4 py-2 w-24">Qty</th>
-                      <th className="px-4 py-2 w-32">Price (₹)</th>
-                      <th className="px-4 py-2 w-32">Total</th>
-                      <th className="px-4 py-2 w-16"></th>
+                      <th className="px-4 py-2 font-medium text-slate-500 w-32">Type</th>
+                      <th className="px-4 py-2 font-medium text-slate-500">Item / Description</th>
+                      <th className="px-4 py-2 font-medium text-slate-500 w-48">Notes</th>
+                      <th className="px-4 py-2 font-medium text-slate-500 w-24">Qty</th>
+                      <th className="px-4 py-2 font-medium text-slate-500 w-32">Price (₹)</th>
+                      <th className="px-4 py-2 font-medium text-slate-500 w-32">Total</th>
+                      <th className="px-4 py-2 font-medium text-slate-500 w-16"></th>
                     </tr>
                   </thead>
                   <tbody>
                     {newLead.lines.map((line, idx) => (
-                      <tr key={idx} className="border-b last:border-0">
+                      <tr key={idx} className="border-b last:border-0 hover:bg-slate-50/50">
                         <td className="px-4 py-2">
-                          <span className={`px-2 py-1 rounded text-[10px] font-bold ${line.itemType === 'CATALOGUE' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
+                          <span className={`px-2 py-1 rounded text-xs font-bold ${line.itemType === 'CATALOGUE' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
                             {line.itemType}
                           </span>
                         </td>
@@ -237,7 +244,7 @@ export default function LeadsPage() {
                       </tr>
                     )}
                   </tbody>
-                  <tfoot className="bg-slate-50 border-t font-bold">
+                  <tfoot className="bg-slate-50 border-t font-bold sticky bottom-0 z-10">
                     <tr>
                       <td colSpan={5} className="px-4 py-3 text-right">Expected Total Value:</td>
                       <td colSpan={2} className="px-4 py-3 text-blue-700">₹ {expectedValue.toLocaleString()}</td>
@@ -245,26 +252,26 @@ export default function LeadsPage() {
                   </tfoot>
                 </table>
               </div>
-            </div>
 
-            <div className="flex gap-2 justify-end pt-4 border-t">
-              <Button variant="outline" onClick={() => setIsAdding(false)}>Cancel</Button>
-              <Button onClick={handleAdd}>Save Lead</Button>
+              <div className="flex gap-2 justify-end pt-4 border-t shrink-0">
+                <Button variant="outline" onClick={() => setIsAdding(false)}>Cancel</Button>
+                <Button onClick={handleAdd}>Save Lead</Button>
+              </div>
             </div>
           </div>
         )}
 
-        <div className="grid grid-cols-6 gap-2 pb-4">
+        <div className="grid grid-cols-6 gap-3 h-[calc(100vh-140px)] overflow-hidden">
           {stages.map(stage => (
-            <div key={stage} className="bg-slate-50/50 rounded-lg border p-2 flex flex-col h-full min-w-[150px]">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="font-bold text-slate-700">{stage}</h3>
-                <span className="bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full text-xs font-bold">
+            <div key={stage} className="bg-slate-50/50 rounded-lg border flex flex-col h-full min-w-[150px] overflow-hidden">
+              <div className="flex flex-col items-center justify-center p-3 mb-2 sticky top-0 z-10 bg-white border-b shadow-sm">
+                <h3 className="font-black text-indigo-700 uppercase tracking-widest text-xs mb-1">{stage}</h3>
+                <span className="text-indigo-600 font-black text-3xl leading-none">
                   {leads.filter(l => l.stage === stage).length}
                 </span>
               </div>
               
-              <div className="space-y-3">
+              <div className="space-y-3 p-2 overflow-y-auto flex-1">
                 {leads.filter(l => l.stage === stage).map(lead => (
                   <div key={lead.id} className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 hover:shadow-md transition-all group">
                     <div className="flex justify-between items-start mb-2">

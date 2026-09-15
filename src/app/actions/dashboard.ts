@@ -20,22 +20,32 @@ export async function getDashboardStats(employeeId?: string, role?: string) {
   }
 
   if (role === "Finance") {
-    const [pending, monthCollections, overdueCount] = await Promise.all([
+    const [pending, monthCollections, overdueCount, pendingReviewsCount, pendingReviewOrders] = await Promise.all([
       db.order.count({ where: { paymentStatus: { in: ["NO_PAYMENT", "ADVANCE_PENDING"] } } }),
       db.payment.aggregate({ where: { status: "POSTED_CLEARED", createdAt: { gte: startOfMonth } }, _sum: { amount: true } }),
       db.order.count({ where: { promiseDate: { lt: today }, paymentStatus: { not: "FULLY_PAID" }, commercialStatus: { not: "CANCELLED" } } }),
+      db.order.count({ where: { status: "DRAFT" } }), // Assuming DRAFT means pending finance review
+      db.order.findMany({ where: { status: "DRAFT" }, include: { customer: true }, take: 10, orderBy: { createdAt: "asc" } })
     ]);
-    return { pending, monthCollections: monthCollections._sum.amount ?? 0, overdueCount };
+    return { pending, monthCollections: monthCollections._sum.amount ?? 0, overdueCount, pendingReviews: pendingReviewsCount, pendingReviewOrders };
   }
 
   if (role === "Stock") {
-    const [totalActive, belowMin, pendingReceipts, pendingFulfil] = await Promise.all([
+    const stockPendingWhere = { 
+      status: "CONFIRMED", 
+      OR: [
+        { lines: { some: { stockStatus: "PENDING_ASSESSMENT" } } },
+        { lines: { some: { stockStatus: "PARTIALLY_ALLOCATED" } } },
+      ] 
+    };
+    const [totalActive, belowMin, pendingReceipts, pendingAssessmentsCount, pendingAssessmentOrders] = await Promise.all([
       db.product.count({ where: { isActive: true } }),
       db.product.count({ where: { isActive: true, importFlags: { contains: "verify_opening" } } }),
       db.productionHandover.count({ where: { status: "READY" } }),
-      db.order.count({ where: { fulfilmentStatus: "QUEUED_FOR_STOCK" } }),
+      db.order.count({ where: stockPendingWhere }),
+      db.order.findMany({ where: stockPendingWhere, include: { customer: true }, take: 10, orderBy: { createdAt: "asc" } })
     ]);
-    return { totalActive, belowMin, pendingReceipts, pendingFulfil };
+    return { totalActive, belowMin, pendingReceipts, pendingAssessments: pendingAssessmentsCount, pendingAssessmentOrders };
   }
 
   if (role === "Production_Supervisor") {

@@ -312,3 +312,44 @@ export async function getFinanceDashboard() {
     totalOutstanding: (outstandingTotal._sum.totalPayable ?? 0) - (totalCollected._sum.amount ?? 0),
   };
 }
+
+/**
+ * Fetch orders pending Finance Review
+ */
+export async function getPendingFinanceReviews() {
+  return await db.order.findMany({
+    where: {
+      status: "DRAFT", // Or pending finance review specific status
+    },
+    include: {
+      customer: true,
+      lines: {
+        include: { product: true }
+      }
+    },
+    orderBy: { createdAt: "asc" }
+  });
+}
+
+/**
+ * Approve order in Finance
+ */
+export async function approveOrderFinance(orderId: string, actorId: string, customPrices: { lineId: string, price: number }[]) {
+  return await db.$transaction(async (tx) => {
+    // Apply any custom prices
+    for (const cp of customPrices) {
+      await tx.orderLine.update({
+        where: { id: cp.lineId },
+        data: { unitPrice: cp.price }
+      });
+    }
+
+    // Set order to CONFIRMED so it moves to Stock Assessment
+    const order = await tx.order.update({
+      where: { id: orderId },
+      data: { status: "CONFIRMED" }
+    });
+
+    return order;
+  });
+}

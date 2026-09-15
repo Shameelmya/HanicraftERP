@@ -322,6 +322,16 @@ export const StockTable: React.FC<{ initialData: StockProduct[] }> = ({ initialD
                   placeholder="https://..."
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Latest Price (₹)</label>
+                <Input 
+                  type="number"
+                  step="0.01"
+                  value={editingProduct.latestPrice || 0} 
+                  onChange={e => setEditingProduct({...editingProduct, latestPrice: Number(e.target.value)})} 
+                  placeholder="0.00"
+                />
+              </div>
             </div>
 
             <div className="flex justify-end gap-2">

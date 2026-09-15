@@ -487,3 +487,62 @@ export async function receiveProductionHandover(data: {
     return handover;
   });
 }
+
+/**
+ * Fetch orders that are waiting for stock assessment
+ */
+export async function getPendingStockAssessments() {
+  return await db.order.findMany({
+    where: {
+      status: "CONFIRMED", // After Finance Review, status is CONFIRMED
+      OR: [
+        { lines: { some: { stockStatus: "PENDING_ASSESSMENT" } } },
+        { lines: { some: { stockStatus: "PARTIALLY_ALLOCATED" } } },
+      ],
+    },
+    include: {
+      customer: true,
+      lines: {
+        include: {
+          product: {
+            include: {
+              inventoryBalances: { where: { warehouseCode: "FINISHED_GOODS" } },
+            },
+          },
+        },
+      },
+    },
+    orderBy: { createdAt: "asc" },
+  });
+}
+
+/**
+ * Mark order stock as fully assessed and ready for dispatch if fully allocated
+ */
+export async function markOrderReady(orderId: string, actorId: string) {
+  return await db.$transaction(async (tx) => {
+    const order = await tx.order.findUnique({
+      where: { id: orderId },
+      include: { lines: true },
+    });
+    if (!order) throw new Error("Order not found");
+
+    const fullyAllocated = order.lines.every(
+      (l) => l.allocatedQty >= l.orderedQty - l.cancelledQty
+    );
+    
+    // If fully allocated, set line fulfilment to READY
+    if (fullyAllocated) {
+      await tx.orderLine.updateMany({
+        where: { orderId: orderId },
+        data: { fulfilmentStatus: "READY" },
+      });
+      await tx.order.update({
+        where: { id: orderId },
+        data: { status: "PROCESSING" },
+      });
+    }
+
+    return fullyAllocated;
+  });
+}

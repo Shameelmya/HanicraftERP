@@ -333,7 +333,6 @@ table.data-table {
 
 .data-table th {
   padding: var(--space-3) var(--space-4);
-  text-align: left;
   font-size: var(--text-xs);
   font-weight: 600;
   color: var(--color-text-secondary);
@@ -342,6 +341,7 @@ table.data-table {
   background: var(--color-bg);
   border-bottom: 1px solid var(--color-border);
   white-space: nowrap;
+  text-align: inherit;
 }
 
 .data-table td {

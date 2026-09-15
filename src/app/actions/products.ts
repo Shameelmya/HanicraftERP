@@ -21,10 +21,39 @@ export async function updateProductImage(productId: string, imageUrl: string, us
 export async function upsertProduct(data: any, userEmail: string) {
   await verifyPermission(userEmail, ["MD", "GM", "Stock"]);
   
-  return await db.product.upsert({
-    where: { sku: data.sku },
-    update: data,
-    create: data
+  const { latestPrice, ...productData } = data;
+  
+  return await db.$transaction(async (tx) => {
+    const product = await tx.product.upsert({
+      where: { sku: productData.sku },
+      update: productData,
+      create: productData
+    });
+    
+    if (latestPrice !== undefined) {
+      // Check current price
+      const currentPrice = await tx.priceListItem.findFirst({
+        where: { productId: product.id, effectiveUntil: null },
+        orderBy: { effectiveFrom: "desc" }
+      });
+      
+      if (!currentPrice || currentPrice.price !== latestPrice) {
+        if (currentPrice) {
+          await tx.priceListItem.update({
+            where: { id: currentPrice.id },
+            data: { effectiveUntil: new Date() }
+          });
+        }
+        await tx.priceListItem.create({
+          data: {
+            productId: product.id,
+            price: latestPrice,
+            approvedBy: userEmail
+          }
+        });
+      }
+    }
+    return product;
   });
 }
 
