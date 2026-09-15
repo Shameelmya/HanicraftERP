@@ -41,7 +41,7 @@ export async function updateDepartment(id: string, data: any, adminEmail: string
 }
 
 export async function updateMyProfile(email: string, data: any) {
-  const profile = await db.employee.findFirst({ where: { email } });
+  const profile = await db.employee.findFirst({ where: { workEmail: email } });
   if (!profile) throw new Error("Profile not found");
   
   return await db.employee.update({

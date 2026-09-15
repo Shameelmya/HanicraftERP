@@ -52,6 +52,7 @@ const navGroups: NavGroup[] = [
     title: "CUSTOMERS & SALES",
     allowedRoles: ["MD", "GM", "Sales"],
     items: [
+      { name: "Leads", href: "/sales/leads", icon: Users },
       { name: "Customers", href: "/customers", icon: Users },
       { name: "Sales Orders", href: "/sales", icon: ShoppingCart },
     ],

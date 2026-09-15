@@ -35,7 +35,7 @@ export default function SettingsPage() {
     setEmployees(emps);
     
     if (user) {
-      const myEmp = emps.find(e => e.email === user.email);
+      const myEmp = emps.find((e: any) => e.workEmail === user.email);
       if (myEmp) {
         setMyName(myEmp.name || "");
         setMyPhone(myEmp.phone || "");
