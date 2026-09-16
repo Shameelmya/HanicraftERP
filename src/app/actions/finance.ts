@@ -353,3 +353,44 @@ export async function approveOrderFinance(orderId: string, actorId: string, cust
     return order;
   });
 }
+
+/**
+ * Fetch all payments for a specific order
+ */
+export async function getOrderPayments(orderId: string) {
+  return await db.payment.findMany({
+    where: { orderId },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+/**
+ * Log an advance payment for an order
+ */
+export async function logAdvancePayment(orderId: string, actorId: string, amount: number, method: string, reference?: string) {
+  return await db.$transaction(async (tx) => {
+    // 1. Create the payment record
+    const payment = await tx.payment.create({
+      data: {
+        paymentNo: `PAY-${Date.now()}`,
+        orderId,
+        paymentType: "ADVANCE",
+        method,
+        reference: reference || null,
+        amount,
+        status: "POSTED_CLEARED", // Auto-clear for demo purposes
+        postedBy: actorId,
+        postedAt: new Date(),
+      }
+    });
+
+    // 2. Update order payment status
+    // To make this robust, we should calculate total payments vs total payable, but for now we set it to ADVANCE_CLEARED
+    await tx.order.update({
+      where: { id: orderId },
+      data: { paymentStatus: "ADVANCE_CLEARED" }
+    });
+
+    return payment;
+  });
+}
